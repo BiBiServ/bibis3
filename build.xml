@@ -11,30 +11,27 @@
     <exec executable="git" outputproperty="git-revision" failifexecutionfails="false" resultproperty="has-git-repo">
       <arg line="log -1 --pretty=format:%H" />
     </exec>
-    
-    <echo message="${has-git-repo}" />
+    <var name="git-revision-var" value="${git-revision}"/>
     <if>
       <equals arg1="${has-git-repo}" arg2="0" />
       <else>
-        <echo message="git revision unknown"/>
-        <property name="git-revision" value="unknown" />
+        <var name="git-revision-var" value="unknown" />
       </else>
     </if>
-    <echo message="Git Revision: ${git-revision}" />
+    <echo message="Git Revision: ${git-revision-var}" />
   
     <exec executable="hg" outputproperty="mercurial-revision" failifexecutionfails="false" resultproperty="has-mercurial-repo">
       <arg line="--debug id -i" />
     </exec>
     
-    <echo message="${has-mercurial-repo}" />
+    <var name="mercurial-revision-var" value="${mercurial-revision}"/>
     <if>
       <equals arg1="${has-mercurial-repo}" arg2="0" />
       <else>
-        <echo message="mercurial revision unknown"/>
-        <property name="mercurial-revision" value="unknown" />
+        <var name="mercurial-revision-var" value="unknown" />
       </else>
     </if>
-    <echo message="Mercurial Revision: ${mercurial-revision}" />
+    <echo message="Mercurial Revision: ${mercurial-revision-var}" />
   </target>
   
   <tstamp>
@@ -58,11 +55,11 @@
   <target name="fulljar" depends="resolve,jar,-post-jar,versioning-hashs">
     <jar destfile="${full.jar}" compress="true">
       <manifest>
-        <attribute name="Main-Class" value="de.unibi.cebitec.aws.s3.transfer.BiBiS3"/>
-        <attribute name="Version" value="${version}"/>
+        <attribute name="Main-Class" value="de.unibi.cebitec.aws.s3.transfer.BiBiS3" />
+        <attribute name="Version" value="${version}" />
         <attribute name="Build" value="${build-date}" />
-        <attribute name="Git-Revision" value="${git-revision}" />
-        <attribute name="Mercurial-Revision" value="${mercurial-revision}" />
+        <attribute name="Git-Revision" value="${git-revision-var}}" />
+        <attribute name="Mercurial-Revision" value="${mercurial-revision-var}" />
       </manifest>
       <zipfileset excludes="META-INF/*" src="${default.jar}"/>
       <zipgroupfileset dir="${lib.dir}"

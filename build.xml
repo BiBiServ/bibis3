@@ -8,7 +8,7 @@
   <target name="versioning-hashs">
     <echo message="Version: ${version}" />
     
-    <exec executable="git" outputproperty="git-revision" failifexecutionfails="false" resultproperty="has-git-repo">
+    <exec executable="git" outputproperty="git-revision" failifexecutionfails="false" resultproperty="has-git-repo" >
       <arg line="log -1 --pretty=format:%H" />
     </exec>
     <var name="git-revision-var" value="${git-revision}"/>
@@ -58,7 +58,7 @@
         <attribute name="Main-Class" value="de.unibi.cebitec.aws.s3.transfer.BiBiS3" />
         <attribute name="Version" value="${version}" />
         <attribute name="Build" value="${build-date}" />
-        <attribute name="Git-Revision" value="${git-revision-var}}" />
+        <attribute name="Git-Revision" value="${git-revision-var}" />
         <attribute name="Mercurial-Revision" value="${mercurial-revision-var}" />
       </manifest>
       <zipfileset excludes="META-INF/*" src="${default.jar}"/>

@@ -247,7 +247,7 @@ public class BiBiS3 {
                 String chunkSizeStr = cl.getOptionValue("chunk-size");
                 try {
                     long newchunkSize = Long.parseLong(chunkSizeStr);
-                    if (newchunkSize < MIN_CHUNK_SIZE) {
+                    if (newchunkSize < MIN_CHUNK_SIZE && cl.hasOption("u")) {
                         log.warn("Invalid chunk size: {}. Must be >= {}. Using defaults.", newchunkSize, MIN_CHUNK_SIZE);
                     } else {
                         chunkSize = newchunkSize;

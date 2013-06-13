@@ -1,0 +1,8 @@
+\.git
+.*\.swp
+build/
+dist/
+nbproject/private/
+.*\.data
+testdata.*
+lib

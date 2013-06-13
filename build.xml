@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="bibis3" default="fulljar" basedir="." xmlns:ivy="antlib:org.apache.ivy.ant">
+  <import file="nbproject/build-impl.xml"/>
+  
+  <property name="version" value="1.2.0"/>
+  
+  <target name="versioning-hashs">
+    <echo message="Version: ${version}" />
+    
+    <exec executable="git" outputproperty="git-revision" failifexecutionfails="false">
+      <arg line="log -1 --pretty=format:%H" />
+    </exec>
+    <echo message="Git Revision: ${git-revision}" />
+  
+    <exec executable="hg" outputproperty="mercurial-revision" failifexecutionfails="false">
+      <arg line="--debug id -i" />
+    </exec>
+    <echo message="Mercurial Revision: ${mercurial-revision}" />
+  </target>
+  
+  <tstamp>
+    <format property="build-date" pattern="yyyy-MM-dd HH:mm:ss" />
+  </tstamp>
+  <property name="lib.dir" value="${basedir}/lib"/>
+  <property name="dist.dir" value="${basedir}/dist"/>
+  <property name="default.jar" value="${dist.dir}/${ant.project.name}.jar"/>
+  <property name="full.jar" value="dist/bibis3-full.jar"/>
+    
+  <ivy:settings url="http://bibiserv.techfak.uni-bielefeld.de/ivy-rep/ivysettings.xml"/>
+    
+  <target name="resolve" description="retrieve dependencies with ivy">
+    <ivy:retrieve />
+  </target>
+  
+  <target name="clean-cache" description="clean ivy cache">
+    <ivy:cleancache/>
+  </target>
+  
+  <target name="fulljar" depends="jar,-post-jar, versioning-hashs">
+    <jar destfile="${full.jar}" compress="true">
+      <manifest>
+        <attribute name="Main-Class" value="de.unibi.cebitec.aws.s3.transfer.BiBiS3"/>
+        <attribute name="Version" value="${version}"/>
+        <attribute name="Build" value="${build-date}" />
+        <attribute name="Git-Revision" value="${git-revision}" />
+        <attribute name="Mercurial-Revision" value="${mercurial-revision}" />
+      </manifest>
+      <zipfileset excludes="META-INF/*" src="${default.jar}"/>
+      <zipgroupfileset dir="${lib.dir}"
+                       excludes="aws-java-sdk*,aspectj*,freemarker*,mail*,jackson*,stax*,slf4j-log4j*,log4j*" />
+      <zipfileset src="${lib.dir}/aws-java-sdk-1.4.5.jar">
+        <exclude name="com/amazonaws/services/autoscaling/**/*" />
+        <exclude name="com/amazonaws/services/cloudformation/**/*" />
+        <exclude name="com/amazonaws/services/cloudfront/**/*" />
+        <exclude name="com/amazonaws/services/cloudfront_2012_03_15/**/*" />
+        <exclude name="com/amazonaws/services/cloudsearch/**/*" />
+        <exclude name="com/amazonaws/services/cloudwatch/**/*" />
+        <exclude name="com/amazonaws/services/datapipeline/**/*" />
+        <exclude name="com/amazonaws/services/directconnect/**/*" />
+        <exclude name="com/amazonaws/services/dynamodb/**/*" />
+        <exclude name="com/amazonaws/services/dynamodbv2/**/*" />
+        <exclude name="com/amazonaws/services/ec2/**/*" />
+        <exclude name="com/amazonaws/services/elasticache/**/*" />
+        <exclude name="com/amazonaws/services/elasticbeanstalk/**/*" />
+        <exclude name="com/amazonaws/services/elasticloadbalancing/**/*" />
+        <exclude name="com/amazonaws/services/elasticmapreduce/**/*" />
+        <exclude name="com/amazonaws/services/elastictranscoder/**/*" />
+        <exclude name="com/amazonaws/services/glacier/**/*" />
+        <exclude name="com/amazonaws/services/identitymanagement/**/*" />
+        <exclude name="com/amazonaws/services/importexport/**/*" />
+        <exclude name="com/amazonaws/services/opsworks/**/*" />
+        <exclude name="com/amazonaws/services/rds/**/*" />
+        <exclude name="com/amazonaws/services/redshift/**/*" />
+        <exclude name="com/amazonaws/services/route53/**/*" />
+        <exclude name="com/amazonaws/services/securitytoken/**/*" />
+        <exclude name="com/amazonaws/services/simpledb/**/*" />
+        <exclude name="com/amazonaws/services/simpleemail/**/*" />
+        <exclude name="com/amazonaws/services/simpleworkflow/**/*" />
+        <exclude name="com/amazonaws/services/sns/**/*" />
+        <exclude name="com/amazonaws/services/sqs/**/*" />
+        <exclude name="com/amazonaws/services/storagegateway/**/*" />
+        <exclude name="com/amazonaws/services/support/**/*" />
+      </zipfileset>
+    </jar> 
+    <delete file="${default.jar}" failonerror="false"/>
+    <delete dir="${dist.dir}/lib" failonerror="false"/>
+    <delete file="${dist.dir}/README.TXT" failonerror="false"/>
+    <move file="${full.jar}" tofile="${default.jar}"/>
+  </target>
+ 
+</project>

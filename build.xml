@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="bibis3" default="fulljar" basedir="." xmlns:ivy="antlib:org.apache.ivy.ant">
+  <taskdef resource="net/sf/antcontrib/antlib.xml"/>
   <import file="nbproject/build-impl.xml"/>
   
   <property name="version" value="1.2.0"/>
@@ -7,14 +8,28 @@
   <target name="versioning-hashs">
     <echo message="Version: ${version}" />
     
-    <exec executable="git" outputproperty="git-revision" failifexecutionfails="false">
+    <exec executable="git" outputproperty="git-revision" failifexecutionfails="false" resultproperty="has-git-repo">
       <arg line="log -1 --pretty=format:%H" />
     </exec>
+    
+    <if>
+      <equals arg1="${has-git-repo}" arg2="0" />
+      <else>
+        <property name="git-revision" value="unknown" />
+      </else>
+    </if>
     <echo message="Git Revision: ${git-revision}" />
   
-    <exec executable="hg" outputproperty="mercurial-revision" failifexecutionfails="false">
+    <exec executable="hg" outputproperty="mercurial-revision" failifexecutionfails="false" resultproperty="has-mercurial-repo">
       <arg line="--debug id -i" />
     </exec>
+    
+    <if>
+      <equals arg1="${has-mercurial-repo}" arg2="0" />
+      <else>
+        <property name="mercurial-revision" value="unknown" />
+      </else>
+    </if>
     <echo message="Mercurial Revision: ${mercurial-revision}" />
   </target>
   

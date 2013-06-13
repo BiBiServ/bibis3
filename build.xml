@@ -12,9 +12,11 @@
       <arg line="log -1 --pretty=format:%H" />
     </exec>
     
+    <echo message="${has-git-repo}" />
     <if>
       <equals arg1="${has-git-repo}" arg2="0" />
       <else>
+        <echo message="git revision unknown"/>
         <property name="git-revision" value="unknown" />
       </else>
     </if>
@@ -24,9 +26,11 @@
       <arg line="--debug id -i" />
     </exec>
     
+    <echo message="${has-mercurial-repo}" />
     <if>
       <equals arg1="${has-mercurial-repo}" arg2="0" />
       <else>
+        <echo message="mercurial revision unknown"/>
         <property name="mercurial-revision" value="unknown" />
       </else>
     </if>
@@ -51,7 +55,7 @@
     <ivy:cleancache/>
   </target>
   
-  <target name="fulljar" depends="jar,-post-jar, versioning-hashs">
+  <target name="fulljar" depends="resolve,jar,-post-jar,versioning-hashs">
     <jar destfile="${full.jar}" compress="true">
       <manifest>
         <attribute name="Main-Class" value="de.unibi.cebitec.aws.s3.transfer.BiBiS3"/>

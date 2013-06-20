@@ -12,7 +12,7 @@ import java.nio.file.StandardCopyOption;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SingleDownloadFile extends DownloadFile implements IDownloadChunk {
+public class SingleDownloadFile extends DownloadFile implements IDownloadChunkS3 {
 
     public static final Logger log = LoggerFactory.getLogger(SingleDownloadFile.class);
     private long size;

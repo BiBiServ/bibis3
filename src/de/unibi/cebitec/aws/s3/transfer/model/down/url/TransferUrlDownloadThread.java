@@ -1,21 +1,20 @@
-package de.unibi.cebitec.aws.s3.transfer.model.down;
+package de.unibi.cebitec.aws.s3.transfer.model.down.url;
 
+import de.unibi.cebitec.aws.s3.transfer.model.down.*;
 import com.amazonaws.services.s3.AmazonS3;
 import java.util.concurrent.Callable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TransferDownloadThread implements Callable<Void> {
+public class TransferUrlDownloadThread implements Callable<Void> {
 
     public static final Logger log = LoggerFactory.getLogger(TransferDownloadThread.class);
-    private AmazonS3 s3;
-    private String bucketName;
-    private IDownloadChunkS3 chunk;
+    private String url;
+    private IDownloadChunkUrl chunk;
     private int retryCount;
 
-    public TransferDownloadThread(AmazonS3 s3, String bucketName, IDownloadChunkS3 chunk, int retryCount) {
-        this.s3 = s3;
-        this.bucketName = bucketName;
+    public TransferUrlDownloadThread(String url, IDownloadChunkUrl chunk, int retryCount) {
+        this.url = url;
         this.chunk = chunk;
         this.retryCount = retryCount;
     }
@@ -24,7 +23,7 @@ public class TransferDownloadThread implements Callable<Void> {
     public Void call() {
         for (int i = 0; i < this.retryCount; i++) {
             try {
-                this.chunk.download(this.s3, this.bucketName);
+                this.chunk.download(this.url);
                 break;
             } catch (Exception e) {
                 log.warn("Chunk download failed! Retrying.... ({})", e.toString());

@@ -15,4 +15,10 @@ public class DownloadFile {
     public String getKey() {
         return key;
     }
+
+    public Path getTargetFile() {
+        return targetFile;
+    }
+    
+    
 }

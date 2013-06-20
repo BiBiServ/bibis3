@@ -14,10 +14,12 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import de.unibi.cebitec.aws.s3.transfer.ctrl.Downloader;
 import de.unibi.cebitec.aws.s3.transfer.ctrl.Uploader;
+import de.unibi.cebitec.aws.s3.transfer.ctrl.UrlDownloader;
 import de.unibi.cebitec.aws.s3.transfer.model.GridDownloadOrganizer;
 import de.unibi.cebitec.aws.s3.transfer.model.InputFileList;
 import de.unibi.cebitec.aws.s3.transfer.model.OutputFileList;
 import de.unibi.cebitec.aws.s3.transfer.streaming.Streamer;
+import de.unibi.cebitec.aws.s3.transfer.streaming.UrlStreamer;
 import de.unibi.cebitec.aws.s3.transfer.util.CredentialsProvider;
 import de.unibi.cebitec.aws.s3.transfer.util.S3RegionsProvider;
 import de.unibi.cebitec.aws.s3.transfer.util.S3URI;
@@ -97,7 +99,8 @@ public class BiBiS3 {
         // create mutually exclusive command-line options
         intentOptions
                 .addOption(OptionBuilder.withLongOpt("upload").withDescription("Upload files. DEST has to be an S3 URL.").create("u"))
-                .addOption(OptionBuilder.withLongOpt("download").withDescription("Download files. SRC has to be an S3 URL.").create("d"));
+                .addOption(OptionBuilder.withLongOpt("download").withDescription("Download files. SRC has to be an S3 URL.").create("d"))
+                .addOption(OptionBuilder.withLongOpt("download-url").withDescription("Download a file with Http GET from (presigned) S3-Http-Url. SRC has to be an Http-URL with Range support for Http GET.").create("g"));
 
         Map<String, Region> regions = S3RegionsProvider.getS3Regions();
         // helptext for region selection
@@ -230,13 +233,23 @@ public class BiBiS3 {
              * Streaming download has its own handler.
              */
             if (cl.hasOption("streaming-download")) {
-                // we dont want the logger to mess up our progress output unless he has serious concerns
-                root.setLevel(ch.qos.logback.classic.Level.WARN);
-                S3URI s3uri = new S3URI(src);
-                Streamer streamer = new Streamer(s3uri.getKey(), FileSystems.getDefault().getPath(dest));
-                streamer.download(creds, clientConfig, s3uri.getBucket());
-                // Streaming download ends here. No parallelization as of yet.
-                System.exit(0);
+                
+                if(cl.hasOption("d")) {
+                    // we dont want the logger to mess up our progress output unless he has serious concerns
+                    root.setLevel(ch.qos.logback.classic.Level.WARN);
+                    S3URI s3uri = new S3URI(src);
+                    Streamer streamer = new Streamer(s3uri.getKey(), FileSystems.getDefault().getPath(dest));
+                    streamer.download(creds, clientConfig, s3uri.getBucket());
+                    // Streaming download ends here. No parallelization as of yet.
+                    System.exit(0);
+                } else  if(cl.hasOption("g")){
+                    // we dont want the logger to mess up our progress output unless he has serious concerns
+                    root.setLevel(ch.qos.logback.classic.Level.WARN);
+                    UrlStreamer streamer = new UrlStreamer(src, FileSystems.getDefault().getPath(dest));
+                    streamer.download(src);
+                    // Streaming download ends here. No parallelization as of yet.
+                    System.exit(0);
+                }
             }
 
             /**
@@ -486,6 +499,47 @@ public class BiBiS3 {
                          */
                         down.download();
                         log.info("Download successful.");
+                    } else if(cl.hasOption("g")) {
+                        /**
+                         * Download URL task.
+                         */
+                        Path destination = Paths.get(dest);
+                        UrlDownloader down;
+                        if (cl.hasOption("grid-download") && cl.hasOption("grid-nodes") && cl.hasOption("grid-current-node")) {
+                            /**
+                             * If this download is a grid download, then parse
+                             * additional CLI parameters and create an
+                             * organizer.
+                             */
+                            int nodesCount = Integer.parseInt(cl.getOptionValue("grid-nodes"));
+                            int currentNode = Integer.parseInt(cl.getOptionValue("grid-current-node"));
+                            GridDownloadOrganizer organizer = new GridDownloadOrganizer(nodesCount, currentNode);
+                            if (cl.hasOption("grid-download-feature-split")) {
+                                organizer.setFeature("split");
+                                if (cl.hasOption("r")) {
+                                    log.error("The grid download split feature works with single files only! (no -r)");
+                                    System.exit(1);
+                                }
+                            }
+                            if (cl.hasOption("grid-download-feature-fastq")) {
+                                organizer.setFeature("fastq");
+                                if (cl.hasOption("r")) {
+                                    log.error("The grid download fastq feature works with single files only! (no -r)");
+                                    System.exit(1);
+                                }
+                            }
+                            down = new UrlDownloader(src, destination, numOfThreads, chunkSize, organizer);
+                        } else {
+                            /**
+                             * No grid download.
+                             */
+                            down = new UrlDownloader(src, destination, numOfThreads, chunkSize);
+                        }
+                        /**
+                         * Start download.
+                         */
+                        down.download();
+                        log.info("Download successful.");
                     }
                     System.exit(0);
                 } catch (IllegalArgumentException e) {
@@ -535,6 +589,6 @@ public class BiBiS3 {
         }
         String header = "";
         String footer = "S3 URLs have to be in the form of: 's3://<bucket>/<key>', e. g. 's3://mybucket/mydatafolder/data.txt'. When using recursive transfer (-r) the trailing slash of the directory is mandatory, e. g. 's3://mybucket/mydatafolder/'.";
-        help.printHelp("java -jar " + jarfilename + " -u|d SRC DEST", header, opts, footer);
+        help.printHelp("java -jar " + jarfilename + " -u|d|g SRC DEST", header, opts, footer);
     }
 }

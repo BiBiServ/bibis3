@@ -9,6 +9,10 @@ import de.unibi.cebitec.aws.s3.transfer.model.down.MultipartDownloadFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,10 +21,18 @@ public class Fastq {
     private static final Logger log = LoggerFactory.getLogger(Fastq.class);
     private AmazonS3 s3;
     private String bucketName;
+    private String url;
+    private boolean s3download;
 
     public Fastq(AmazonS3 s3, String bucketName) {
         this.s3 = s3;
         this.bucketName = bucketName;
+        s3download = true;
+    }
+
+    public Fastq(String url) {
+        s3download = false;
+        this.url = url;
     }
 
     public void optimizeSplitStart(DownloadPart firstPart) {
@@ -98,22 +110,53 @@ public class Fastq {
         int retries = BiBiS3.RETRIES;
         int sampleSize = (int) (end - start);
         while (retries > 0) {
-            GetObjectRequest partialRequest = new GetObjectRequest(this.bucketName, file.getKey());
-            log.debug("Requesting data sample in range [{},{}]", start, end);
-            partialRequest.setRange(start, end);
-            S3Object objectPart = s3.getObject(partialRequest);
-            try (ReadableByteChannel in = Channels.newChannel(objectPart.getObjectContent())) {
-                ByteBuffer buffer = ByteBuffer.allocate(sampleSize);
-                int read = in.read(buffer);
-                log.debug("number of bytes read: {}", read);
-                log.debug("byte array of sample data has {} bytes.", buffer.array().length);
-                return buffer.array();
-            } catch (Exception e) {
-                log.warn("Unable to determine optimal fastq splits! Could not sample split areas. Exception: {}", e);
-                log.warn("Retrying...");
+
+            if (s3download) {
+                GetObjectRequest partialRequest = new GetObjectRequest(this.bucketName, file.getKey());
+                log.debug("Requesting data sample in range [{},{}]", start, end);
+                partialRequest.setRange(start, end);
+                S3Object objectPart = s3.getObject(partialRequest);
+                try (ReadableByteChannel in = Channels.newChannel(objectPart.getObjectContent())) {
+                    ByteBuffer buffer = ByteBuffer.allocate(sampleSize);
+                    int read = in.read(buffer);
+                    log.debug("number of bytes read: {}", read);
+                    log.debug("byte array of sample data has {} bytes.", buffer.array().length);
+                    return buffer.array();
+                } catch (Exception e) {
+                    log.warn("Unable to determine optimal fastq splits! Could not sample split areas. Exception: {}", e);
+                    log.warn("Retrying...");
+                }
+            } else {
+
+                log.debug("Requesting data sample in range [{},{}]", start, end);
+
+                DefaultHttpClient httpClient = new DefaultHttpClient();
+                HttpGet httpGet = new HttpGet(url);
+                httpGet.addHeader("Range", "bytes=" + start + "-" + end);
+
+                try {
+                    HttpResponse httpResponse = httpClient.execute(httpGet);
+                    HttpEntity httpEntity = httpResponse.getEntity();
+
+                    try (ReadableByteChannel in = Channels.newChannel(httpEntity.getContent())) {
+                        ByteBuffer buffer = ByteBuffer.allocate(sampleSize);
+                        int read = in.read(buffer);
+                        log.debug("number of bytes read: {}", read);
+                        log.debug("byte array of sample data has {} bytes.", buffer.array().length);
+                        return buffer.array();
+                    } catch (Exception e) {
+                        log.warn("Unable to determine optimal fastq splits! Could not sample split areas. Exception: {}", e);
+                        log.warn("Retrying...");
+                    }
+                } catch (Exception e) {
+                    log.warn("Unable to determine optimal fastq splits! Could not sample split areas. Exception: {}", e);
+                    log.warn("Retrying...");
+                }
             }
+
             retries--;
         }
+
         System.exit(1);
         return new byte[0];
     }

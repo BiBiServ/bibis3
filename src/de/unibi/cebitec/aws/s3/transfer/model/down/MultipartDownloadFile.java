@@ -1,5 +1,6 @@
 package de.unibi.cebitec.aws.s3.transfer.model.down;
 
+import de.unibi.cebitec.aws.s3.transfer.model.down.url.DownloadPartUrl;
 import de.unibi.cebitec.aws.s3.transfer.util.UnrecoverableErrorException;
 import java.io.File;
 import java.io.IOException;
@@ -24,13 +25,13 @@ public class MultipartDownloadFile extends DownloadFile {
     private FileChannel outputFileChannel;
     private long fileSize;
 
-    public MultipartDownloadFile(String key, Path targetFile, long fileSize, final long initialPartSize, long offset) {
-        this(key, targetFile, fileSize, initialPartSize);
+    public MultipartDownloadFile(String key, Path targetFile, long fileSize, boolean s3, final long initialPartSize, long offset) {
+        this(key, targetFile, fileSize, s3, initialPartSize);
         this.remainingParts.clear();
-        gatherParts(initialPartSize, offset);
+        gatherParts(initialPartSize, offset, s3);
     }
 
-    public MultipartDownloadFile(String key, Path targetFile, long fileSize, final long initialPartSize) {
+    public MultipartDownloadFile(String key, Path targetFile, long fileSize, boolean s3, final long initialPartSize) {
         super(key, targetFile);
         this.fileSize = fileSize;
 
@@ -48,7 +49,7 @@ public class MultipartDownloadFile extends DownloadFile {
             }
         });
         this.registeredParts = new ArrayList<>();
-        gatherParts(initialPartSize, 0);
+        gatherParts(initialPartSize, 0, s3);
     }
 
     /**
@@ -56,13 +57,19 @@ public class MultipartDownloadFile extends DownloadFile {
      *
      * @param initialPartSize Part size for all parts but the last one.
      * @param offset Offset into file.
+     * @param s3 true if s3 download, false if url download
      */
-    private void gatherParts(long initialPartSize, long offset) {
+    private void gatherParts(long initialPartSize, long offset, boolean s3) {
         long partSize;
         long pos = 0;
         for (int i = 1; pos < this.fileSize; i++) {
             partSize = Math.min(initialPartSize, (this.fileSize - pos));
-            DownloadPart p = new DownloadPart(this);
+            DownloadPart p; 
+            if (s3) {
+                p = new DownloadPartS3(this);
+            } else {
+                p = new DownloadPartUrl(this);
+            }
             p.setPartNumber(i);
             p.setPartSize(partSize);
             p.setInputOffset(pos + offset);

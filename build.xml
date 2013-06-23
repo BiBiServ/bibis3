@@ -3,7 +3,7 @@
   <taskdef resource="net/sf/antcontrib/antlib.xml"/>
   <import file="nbproject/build-impl.xml"/>
   
-  <property name="version" value="1.2.1"/>
+  <property name="version" value="1.3.0"/>
   
   <target name="versioning-hashs">
     <echo message="Version: ${version}" />

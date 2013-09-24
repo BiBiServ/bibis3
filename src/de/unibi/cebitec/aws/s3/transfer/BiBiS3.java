@@ -428,7 +428,7 @@ public class BiBiS3 {
                                     String relativePathString = item.getKey().substring(keyPrefix.length());
                                     log.debug("relative path string: {}", relativePathString);
                                     Path fileDestinationPath = destination;
-                                    if (destination.startsWith(".") && destination.endsWith(".")) {
+                                    if (destination.equals(".")) {
                                         fileDestinationPath = fileDestinationPath.resolve(dirname);
                                     }
                                     fileDestinationPath = fileDestinationPath.resolve(relativePathString);

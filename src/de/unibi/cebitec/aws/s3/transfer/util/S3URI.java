@@ -14,7 +14,11 @@ public class S3URI {
     public S3URI(String s3uri) throws URISyntaxException, IllegalArgumentException {
         URI uri = new URI(s3uri);
         this.bucket = uri.getAuthority();
-        this.key = uri.getPath().substring(1);
+        try {
+            this.key = uri.getPath().substring(1);
+        } catch (StringIndexOutOfBoundsException se) {
+            throw new IllegalArgumentException("Ambiguous S3URI specified. Perhaps missing a trailing '/'?");
+        }
         if (this.bucket == null) {
             log.warn("URI: {}   BUCKET: {}   KEY: {}", s3uri, this.bucket, this.key);
             throw new IllegalArgumentException("Invalid S3URI - no bucket specified!");

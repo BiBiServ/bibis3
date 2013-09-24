@@ -32,6 +32,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -120,6 +121,7 @@ public class BiBiS3 {
                 .addOptionGroup(intentOptions)
                 .addOption(OptionBuilder.withLongOpt("recursive").withDescription("Enable recursive transfer of a directory.").create("r"))
                 .addOption(OptionBuilder.withLongOpt("debug").withDescription("Debug mode.").create())
+                .addOption(OptionBuilder.withLongOpt("trace").withDescription("Extended debug mode.").create())
                 .addOption(OptionBuilder.withLongOpt("help").withDescription("Help.").create("h"))
                 .addOption(OptionBuilder.withLongOpt("version").withDescription("Version.").create("v"))
                 .addOption(OptionBuilder.withLongOpt("quiet").withDescription("Disable all log messages.").create("q"))
@@ -202,6 +204,10 @@ public class BiBiS3 {
 
             if (cl.hasOption("debug")) {
                 root.setLevel(ch.qos.logback.classic.Level.DEBUG);
+            }
+            
+            if (cl.hasOption("trace")) {
+                root.setLevel(ch.qos.logback.classic.Level.TRACE);
             }
 
             if (cl.hasOption("q")) {
@@ -571,6 +577,7 @@ public class BiBiS3 {
             }
         } catch (Exception e) {
             log.error("An error occured during the transfer: {}", e.toString());
+            log.trace("{}", Arrays.asList(e.getStackTrace()));
         }
         System.exit(1);
     }

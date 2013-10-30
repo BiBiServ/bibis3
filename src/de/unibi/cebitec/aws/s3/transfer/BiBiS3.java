@@ -68,6 +68,7 @@ public class BiBiS3 {
     public static final String DEFAULT_REGION = "us-east-1";
     public static final int DEFAULT_THREAD_COUNT = 50;
     public static final int RETRIES = 6;
+    public static final int INCOMPLETE_HTTP_RESPONSE_RETRIES = 10;
 
     /**
      * We disable the logging of the SDK (mostly used by the Apache HTTP Client)
@@ -83,8 +84,8 @@ public class BiBiS3 {
 
         // tweak connection settings to minimize timeouts
         ClientConfiguration clientConfig = new ClientConfiguration();
-        clientConfig.setConnectionTimeout(1000 * 300); // 5 min
-        clientConfig.setSocketTimeout(1000 * 300); // 5 min
+        clientConfig.setConnectionTimeout(1000 * 30); // 30 sec
+        clientConfig.setSocketTimeout(1000 * 30); // 30 sec
         clientConfig.setMaxErrorRetry(RETRIES);
 
         CommandLineParser cli = new PosixParser();

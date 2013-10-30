@@ -3,6 +3,7 @@ package de.unibi.cebitec.aws.s3.transfer.model.down;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
+import de.unibi.cebitec.aws.s3.transfer.BiBiS3;
 import de.unibi.cebitec.aws.s3.transfer.model.Measurements;
 import java.io.IOException;
 import java.nio.channels.Channels;
@@ -26,19 +27,33 @@ public class DownloadPartS3 implements IDownloadChunkS3, DownloadPart {
 
     @Override
     public void download(AmazonS3 s3, String bucketName) throws Exception {
-        GetObjectRequest partialRequest = new GetObjectRequest(bucketName, this.multipartDownloadFile.key);
-        partialRequest.setRange(this.inputOffset, this.inputOffset + this.partSize);
-        S3Object objectPart = s3.getObject(partialRequest);
-        FileChannel out = this.getMultipartDownloadFile().getOutputFileChannel();
+        long offset = this.inputOffset;
+        long remainingBytes = this.partSize;
+        for (int i = 0; i < BiBiS3.INCOMPLETE_HTTP_RESPONSE_RETRIES; i++) {
+            GetObjectRequest partialRequest = new GetObjectRequest(bucketName, this.multipartDownloadFile.key);
+            partialRequest.setRange(offset, offset + remainingBytes);
+            S3Object objectPart = s3.getObject(partialRequest);
+            FileChannel out = this.getMultipartDownloadFile().getOutputFileChannel();
 
-        log.debug("Starting download of part {} of file: {}", this.partNumber, this.multipartDownloadFile.key);
-        try (ReadableByteChannel in = Channels.newChannel(objectPart.getObjectContent())) {
-            out.transferFrom(in, this.outputOffset, this.partSize); //TODO: mit negativem offset immer an anfang der datei schreiben?
-            Measurements.countChunkAsFinished();
-            log.debug("Download done: Part {} of file: {}", this.partNumber, this.multipartDownloadFile.key);
-        } catch (IOException e) {
-            log.debug("Failed to write part to file. Reason: {}  ; Part Number: {}  ; Filename: {}", e.getClass().getSimpleName(), this.getPartNumber(), this.multipartDownloadFile.targetFile);
-            throw e;
+            log.trace("Starting download of part {} of file: {}", this.partNumber, this.multipartDownloadFile.key);
+            try (ReadableByteChannel in = Channels.newChannel(objectPart.getObjectContent())) {
+                long bytesRead = out.transferFrom(in, offset, remainingBytes); //TODO: mit negativem offset immer an anfang der datei schreiben?
+                if (bytesRead == remainingBytes) {
+                    Measurements.countChunkAsFinished();
+                    log.trace("Download done: Part {} of file: {}", this.partNumber, this.multipartDownloadFile.key);
+                    break;
+                } else {
+                    log.warn("Chunk transfer of part {} of file '{}' has been interrupted! {} out of {} bytes have already been transferred. Retrying transfer of the remaining {} bytes....", this.partNumber, this.multipartDownloadFile.targetFile, bytesRead, remainingBytes, remainingBytes - bytesRead);
+                    offset = offset + bytesRead;
+                    remainingBytes = remainingBytes - bytesRead;
+                }
+                if (i == BiBiS3.INCOMPLETE_HTTP_RESPONSE_RETRIES - 1) {
+                    throw new IOException("Chunk transfer failed after " + BiBiS3.INCOMPLETE_HTTP_RESPONSE_RETRIES + " attempts to recover from interrupted HTTP transfers!");
+                }
+            } catch (IOException e) {
+                log.debug("Failed to write part to file. Reason: {}  ; Part Number: {}  ; Filename: {}", e.getClass().getSimpleName(), this.getPartNumber(), this.multipartDownloadFile.targetFile);
+                throw e;
+            }
         }
     }
 

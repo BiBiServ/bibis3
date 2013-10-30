@@ -18,7 +18,6 @@ public class SingleUrlDownloadFile extends DownloadFile implements IDownloadChun
 
     public static final Logger log = LoggerFactory.getLogger(SingleUrlDownloadFile.class);
     private long size;
-    private Path targetFile;
 
     public SingleUrlDownloadFile(String key, Path targetFile, long size) {
         super(key, targetFile);
@@ -28,12 +27,12 @@ public class SingleUrlDownloadFile extends DownloadFile implements IDownloadChun
 
     @Override
     public void download(String url) throws Exception {
-        
+
         DefaultHttpClient httpClient = new DefaultHttpClient();
         HttpGet httpGet = new HttpGet(url);
         HttpResponse httpResponse = httpClient.execute(httpGet);
         HttpEntity httpEntity = httpResponse.getEntity();
-        
+
 
         log.debug("Starting download of single file: {}", url);
         try (InputStream in = httpEntity.getContent()) {
@@ -42,7 +41,10 @@ public class SingleUrlDownloadFile extends DownloadFile implements IDownloadChun
                 parentDir.toFile().mkdirs();
             }
             if (!this.targetFile.toFile().isDirectory()) {
-                Files.copy(in, this.targetFile, StandardCopyOption.REPLACE_EXISTING);
+                long bytesRead = Files.copy(in, this.targetFile, StandardCopyOption.REPLACE_EXISTING);
+                if (bytesRead != this.size) {
+                    throw new IOException("File transfer of file '" + this.targetFile + "' has been interrupted!");
+                }
             }
             Measurements.countChunkAsFinished();
             log.debug("Download done: Single file: {}", url);
@@ -50,8 +52,8 @@ public class SingleUrlDownloadFile extends DownloadFile implements IDownloadChun
             log.debug("Failed to save single file to disk. Reason: {}  ; Filename: {}", e.getClass().getSimpleName(), this.targetFile);
             throw e;
         } finally {
-             httpGet.abort();
-             httpClient.getConnectionManager().shutdown();
+            httpGet.abort();
+            httpClient.getConnectionManager().shutdown();
         }
     }
 

@@ -33,7 +33,10 @@ public class SingleDownloadFile extends DownloadFile implements IDownloadChunkS3
                 parentDir.toFile().mkdirs();
             }
             if (!this.targetFile.toFile().isDirectory()) {
-                Files.copy(in, this.targetFile, StandardCopyOption.REPLACE_EXISTING);
+                long bytesRead = Files.copy(in, this.targetFile, StandardCopyOption.REPLACE_EXISTING);
+                if (bytesRead != this.size) {
+                    throw new IOException("File transfer of file '" + this.targetFile + "' has been interrupted!");
+                }
             }
             Measurements.countChunkAsFinished();
             log.debug("Download done: Single file: {}", this.key);

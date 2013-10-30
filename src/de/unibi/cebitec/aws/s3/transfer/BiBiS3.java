@@ -205,7 +205,7 @@ public class BiBiS3 {
             if (cl.hasOption("debug")) {
                 root.setLevel(ch.qos.logback.classic.Level.DEBUG);
             }
-            
+
             if (cl.hasOption("trace")) {
                 root.setLevel(ch.qos.logback.classic.Level.TRACE);
             }
@@ -239,8 +239,8 @@ public class BiBiS3 {
              * Streaming download has its own handler.
              */
             if (cl.hasOption("streaming-download")) {
-                
-                if(cl.hasOption("d")) {
+
+                if (cl.hasOption("d")) {
                     // we dont want the logger to mess up our progress output unless he has serious concerns
                     root.setLevel(ch.qos.logback.classic.Level.WARN);
                     S3URI s3uri = new S3URI(src);
@@ -248,7 +248,7 @@ public class BiBiS3 {
                     streamer.download(creds, clientConfig, s3uri.getBucket());
                     // Streaming download ends here. No parallelization as of yet.
                     System.exit(0);
-                } else  if(cl.hasOption("g")){
+                } else if (cl.hasOption("g")) {
                     // we dont want the logger to mess up our progress output unless he has serious concerns
                     root.setLevel(ch.qos.logback.classic.Level.WARN);
                     UrlStreamer streamer = new UrlStreamer(src, FileSystems.getDefault().getPath(dest));
@@ -448,7 +448,19 @@ public class BiBiS3 {
                             }
                         } else {
                             try {
-                                ObjectMetadata meta = s3.getObjectMetadata(s3uri.getBucket(), keyPrefix);
+                                ObjectMetadata meta = null;
+                                for (int i = 0; i < RETRIES; i++) {
+                                    try {
+                                        meta = s3.getObjectMetadata(s3uri.getBucket(), keyPrefix);
+                                        break;
+                                    } catch (Exception e) {
+                                        log.warn("Metadata request failed! Retrying.... ({})", e.toString());
+                                    }
+                                    if (i == RETRIES - 1) {
+                                        log.error("Metadata request failed after {} retries. Exiting...", i);
+                                        System.exit(1);
+                                    }
+                                }
                                 filesToDownload.put(keyPrefix, meta.getContentLength());
                                 if (destination.toFile().isDirectory()) {
                                     String filename;
@@ -505,7 +517,7 @@ public class BiBiS3 {
                          */
                         down.download();
                         log.info("Download successful.");
-                    } else if(cl.hasOption("g")) {
+                    } else if (cl.hasOption("g")) {
                         /**
                          * Download URL task.
                          */

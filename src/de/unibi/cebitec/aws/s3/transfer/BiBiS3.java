@@ -243,7 +243,7 @@ public class BiBiS3 {
 
                 if (cl.hasOption("d")) {
                     // we dont want the logger to mess up our progress output unless he has serious concerns
-                    root.setLevel(ch.qos.logback.classic.Level.WARN);
+                    root.setLevel(ch.qos.logback.classic.Level.ERROR);
                     S3URI s3uri = new S3URI(src);
                     Streamer streamer = new Streamer(s3uri.getKey(), FileSystems.getDefault().getPath(dest));
                     streamer.download(creds, clientConfig, s3uri.getBucket());
@@ -251,7 +251,7 @@ public class BiBiS3 {
                     System.exit(0);
                 } else if (cl.hasOption("g")) {
                     // we dont want the logger to mess up our progress output unless he has serious concerns
-                    root.setLevel(ch.qos.logback.classic.Level.WARN);
+                    root.setLevel(ch.qos.logback.classic.Level.ERROR);
                     UrlStreamer streamer = new UrlStreamer(src, FileSystems.getDefault().getPath(dest));
                     streamer.download(src);
                     // Streaming download ends here. No parallelization as of yet.

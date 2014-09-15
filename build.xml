@@ -3,7 +3,7 @@
   <taskdef resource="net/sf/antcontrib/antlib.xml"/>
   <import file="nbproject/build-impl.xml"/>
   
-  <property name="version" value="1.4.1"/>
+  <property name="version" value="1.4.2"/>
   
   <target name="versioning-hashs">
     <echo message="Version: ${version}" />
@@ -63,14 +63,19 @@
       </manifest>
       <zipfileset excludes="META-INF/*" src="${default.jar}"/>
       <zipgroupfileset dir="${lib.dir}"
-                       excludes="aws-java-sdk*,aspectj*,freemarker*,mail*,jackson*,stax*,slf4j-log4j*,log4j*" />
-      <zipfileset src="${lib.dir}/aws-java-sdk-1.4.5.jar">
+                       excludes="aws-java-sdk*,aspectj*,freemarker*,mail*,stax*,slf4j-log4j*,log4j*" />
+      <zipfileset src="${lib.dir}/aws-java-sdk-1.8.9.1.jar">
         <exclude name="com/amazonaws/services/autoscaling/**/*" />
         <exclude name="com/amazonaws/services/cloudformation/**/*" />
         <exclude name="com/amazonaws/services/cloudfront/**/*" />
         <exclude name="com/amazonaws/services/cloudfront_2012_03_15/**/*" />
         <exclude name="com/amazonaws/services/cloudsearch/**/*" />
+        <exclude name="com/amazonaws/services/cloudsearchdomain/**/*" />
+        <exclude name="com/amazonaws/services/cloudsearchv2/**/*" />
+        <exclude name="com/amazonaws/services/cloudtrail/**/*" />
         <exclude name="com/amazonaws/services/cloudwatch/**/*" />
+        <exclude name="com/amazonaws/services/cognitosync/**/*" />
+        <exclude name="com/amazonaws/services/cognitoidentity/**/*" />
         <exclude name="com/amazonaws/services/datapipeline/**/*" />
         <exclude name="com/amazonaws/services/directconnect/**/*" />
         <exclude name="com/amazonaws/services/dynamodb/**/*" />
@@ -84,10 +89,13 @@
         <exclude name="com/amazonaws/services/glacier/**/*" />
         <exclude name="com/amazonaws/services/identitymanagement/**/*" />
         <exclude name="com/amazonaws/services/importexport/**/*" />
+        <exclude name="com/amazonaws/services/kinesis/**/*" />
+        <exclude name="com/amazonaws/services/logs/**/*" />
         <exclude name="com/amazonaws/services/opsworks/**/*" />
         <exclude name="com/amazonaws/services/rds/**/*" />
         <exclude name="com/amazonaws/services/redshift/**/*" />
         <exclude name="com/amazonaws/services/route53/**/*" />
+        <exclude name="com/amazonaws/services/route53domains/**/*" />
         <exclude name="com/amazonaws/services/securitytoken/**/*" />
         <exclude name="com/amazonaws/services/simpledb/**/*" />
         <exclude name="com/amazonaws/services/simpleemail/**/*" />

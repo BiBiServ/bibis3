@@ -27,24 +27,26 @@ public class DownloadPartS3 implements IDownloadChunkS3, DownloadPart {
 
     @Override
     public void download(AmazonS3 s3, String bucketName) throws Exception {
-        long offset = this.inputOffset;
+        long currentInputOffset = this.inputOffset;
+        long currentOutputOffset = this.outputOffset;
         long remainingBytes = this.partSize;
         for (int i = 0; i < BiBiS3.INCOMPLETE_HTTP_RESPONSE_RETRIES; i++) {
             GetObjectRequest partialRequest = new GetObjectRequest(bucketName, this.multipartDownloadFile.key);
-            partialRequest.setRange(offset, offset + remainingBytes);
+            partialRequest.setRange(currentInputOffset, currentInputOffset + remainingBytes);
             S3Object objectPart = s3.getObject(partialRequest);
             FileChannel out = this.getMultipartDownloadFile().getOutputFileChannel();
 
             log.trace("Starting download of part {} of file: {}", this.partNumber, this.multipartDownloadFile.key);
             try (ReadableByteChannel in = Channels.newChannel(objectPart.getObjectContent())) {
-                long bytesRead = out.transferFrom(in, offset, remainingBytes); //TODO: mit negativem offset immer an anfang der datei schreiben?
+                long bytesRead = out.transferFrom(in, currentOutputOffset, remainingBytes); //TODO: mit negativem offset immer an anfang der datei schreiben?
                 if (bytesRead == remainingBytes) {
                     Measurements.countChunkAsFinished();
                     log.trace("Download done: Part {} of file: {}", this.partNumber, this.multipartDownloadFile.key);
                     break;
                 } else {
                     log.warn("Chunk transfer of part {} of file '{}' has been interrupted! {} out of {} bytes have already been transferred. Retrying transfer of the remaining {} bytes....", this.partNumber, this.multipartDownloadFile.targetFile, bytesRead, remainingBytes, remainingBytes - bytesRead);
-                    offset = offset + bytesRead;
+                    currentInputOffset = currentInputOffset + bytesRead;
+                    currentOutputOffset = currentOutputOffset + bytesRead;
                     remainingBytes = remainingBytes - bytesRead;
                 }
                 if (i == BiBiS3.INCOMPLETE_HTTP_RESPONSE_RETRIES - 1) {

@@ -565,7 +565,7 @@ public class BiBiS3 {
                     log.error("Invalid argument: {}", e.getMessage());
                 }
             } catch (IOException e) {
-                log.error("AWS credentials properties file not found!");
+                log.error("IOError: {}", e.getMessage());
             }
 
         } catch (ParseException e) {

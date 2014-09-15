@@ -6,6 +6,7 @@ import com.amazonaws.services.s3.model.S3Object;
 import de.unibi.cebitec.aws.s3.transfer.BiBiS3;
 import de.unibi.cebitec.aws.s3.transfer.model.down.DownloadPart;
 import de.unibi.cebitec.aws.s3.transfer.model.down.MultipartDownloadFile;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
@@ -49,13 +50,19 @@ public class Fastq {
             byte[] data = getData(firstPart.getMultipartDownloadFile(), sampleStart, sampleEnd);
             String sample = new String(data);
 
-            long extraLengthBefore = findSplit(sample, spaceBefore);
+            try {
+                long extraLengthBefore = findSplit(sample, spaceBefore);
 
-            log.info("fastq: Adding {} bytes to the beginning of the first chunk.", extraLengthBefore);
-            firstPart.setInputOffset(firstPart.getInputOffset() - extraLengthBefore);
-            firstPart.setPartSize(firstPart.getPartSize() + extraLengthBefore);
-        } catch (Exception e) {
-            log.error("Fastq split start optimization failed: {}", e);
+                log.info("Fastq: Adding {} bytes to the beginning of the first chunk.", extraLengthBefore);
+                firstPart.setInputOffset(firstPart.getInputOffset() - extraLengthBefore);
+                firstPart.setPartSize(firstPart.getPartSize() + extraLengthBefore);
+            } catch (StringIndexOutOfBoundsException se) {
+                throw new IOException("Input file is not a text-based fastq file!");
+            }
+        } catch (IOException e) {
+            log.error("Fastq split start optimization failed: {}", e.getMessage());
+            log.trace("", e);
+            System.exit(3);
         }
     }
 
@@ -73,16 +80,22 @@ public class Fastq {
             byte[] data = getData(lastPart.getMultipartDownloadFile(), sampleStart, sampleEnd);
             String sample = new String(data);
 
-            long endCutoff = findSplit(sample, spaceBefore);
+            try {
+                long endCutoff = findSplit(sample, spaceBefore);
 
-            log.info("fastq: Removing {} bytes from the end of the last chunk.", endCutoff);
-            lastPart.setPartSize(lastPart.getPartSize() - endCutoff);
-        } catch (Exception e) {
-            log.error("Fastq split end optimization failed: {}", e);
+                log.info("Fastq: Removing {} bytes from the end of the last chunk.", endCutoff);
+                lastPart.setPartSize(lastPart.getPartSize() - endCutoff);
+            } catch (StringIndexOutOfBoundsException se) {
+                throw new IOException("Input file is not a text-based fastq file!");
+            }
+        } catch (IOException e) {
+            log.error("Fastq split end optimization failed: {}", e.getMessage());
+            log.trace("", e);
+            System.exit(3);
         }
     }
 
-    public long findSplit(String sample, int spaceBefore) {
+    public long findSplit(String sample, int spaceBefore) throws StringIndexOutOfBoundsException {
         char prevChar = 0;
         char currChar;
         char pairChar = 0;

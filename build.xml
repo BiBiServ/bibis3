@@ -3,9 +3,9 @@
   <taskdef resource="net/sf/antcontrib/antlib.xml"/>
   <import file="nbproject/build-impl.xml"/>
   
-  <property name="version" value="1.4.2"/>
+  <property name="version" value="1.5.0"/>
   
-  <target name="versioning-hashs">
+  <target name="versioning-hashes">
     <echo message="Version: ${version}" />
     
     <exec executable="git" outputproperty="git-revision" failifexecutionfails="false" resultproperty="has-git-repo" >
@@ -40,6 +40,7 @@
   <property name="lib.dir" value="${basedir}/lib"/>
   <property name="dist.dir" value="${basedir}/dist"/>
   <property name="default.jar" value="${dist.dir}/${ant.project.name}.jar"/>
+  <property name="version.jar" value="${dist.dir}/${ant.project.name}-${version}.jar"/>
   <property name="full.jar" value="dist/bibis3-full.jar"/>
     
   <ivy:settings url="http://bibiserv.techfak.uni-bielefeld.de/ivy-rep/ivysettings.xml"/>
@@ -52,7 +53,7 @@
     <ivy:cleancache/>
   </target>
   
-  <target name="fulljar" depends="resolve,jar,-post-jar,versioning-hashs">
+  <target name="fulljar" depends="resolve,jar,-post-jar,versioning-hashes">
     <jar destfile="${full.jar}" compress="true">
       <manifest>
         <attribute name="Main-Class" value="de.unibi.cebitec.aws.s3.transfer.BiBiS3" />
@@ -109,7 +110,7 @@
     <delete file="${default.jar}" failonerror="false"/>
     <delete dir="${dist.dir}/lib" failonerror="false"/>
     <delete file="${dist.dir}/README.TXT" failonerror="false"/>
-    <move file="${full.jar}" tofile="${default.jar}"/>
+    <move file="${full.jar}" tofile="${version.jar}"/>
   </target>
  
 </project>

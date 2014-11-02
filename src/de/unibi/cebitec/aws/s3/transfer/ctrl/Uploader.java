@@ -4,6 +4,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadResult;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import de.unibi.cebitec.aws.s3.transfer.BiBiS3;
 import de.unibi.cebitec.aws.s3.transfer.model.InputFileList;
 import de.unibi.cebitec.aws.s3.transfer.model.Measurements;
@@ -37,13 +38,15 @@ public class Uploader {
     private final AmazonS3 s3;
     private int numberOfThreads;
     private long chunkSize;
+    private final ObjectMetadata metadata;
 
-    public Uploader(AmazonS3Client s3, InputFileList<Path> inputFiles, String bucketName, OutputFileList uploadTargetKeys, int numberOfThreads, long chunkSize) {
+    public Uploader(AmazonS3Client s3, InputFileList<Path> inputFiles, String bucketName, OutputFileList uploadTargetKeys, int numberOfThreads, long chunkSize, ObjectMetadata metadata) {
         this.inputFiles = inputFiles;
         this.outputFiles = uploadTargetKeys;
         this.bucketName = bucketName;
         this.numberOfThreads = numberOfThreads;
         this.chunkSize = chunkSize;
+        this.metadata = metadata;
 
         this.files = new ArrayList<>();
         this.chunks = new ArrayList<>();
@@ -55,9 +58,9 @@ public class Uploader {
         for (Map.Entry<Path, Long> item : this.inputFiles.entrySet()) {
             Measurements.addToOverallBytes(item.getValue());
             if (item.getValue() < BiBiS3.MIN_CHUNK_SIZE) {
-                addSingleFile(item.getKey(), this.outputFiles.get(item.getKey()));
+                addSingleFile(item.getKey(), this.outputFiles.get(item.getKey()), this.metadata);
             } else {
-                addMultipartFile(item.getKey(), this.outputFiles.get(item.getKey()));
+                addMultipartFile(item.getKey(), this.outputFiles.get(item.getKey()), this.metadata);
             }
         }
 
@@ -116,15 +119,15 @@ public class Uploader {
         log.info("Overall average upload speed: {}", Measurements.getEndResult());
     }
 
-    private void addMultipartFile(Path file, String key) {
+    private void addMultipartFile(Path file, String key, ObjectMetadata metadata) {
         MultipartUploadFile mFile = new MultipartUploadFile(file, key, this.chunkSize);
         this.files.add(mFile);
-        InitiateMultipartUploadRequest mReq = new InitiateMultipartUploadRequest(this.bucketName, mFile.getKey());
+        InitiateMultipartUploadRequest mReq = new InitiateMultipartUploadRequest(this.bucketName, mFile.getKey(), metadata);
         InitiateMultipartUploadResult mRes = this.s3.initiateMultipartUpload(mReq);
         mFile.setUploadId(mRes.getUploadId());
     }
 
-    private void addSingleFile(Path file, String key) {
-        this.files.add(new SingleUploadFile(file, key));
+    private void addSingleFile(Path file, String key, ObjectMetadata metadata) {
+        this.files.add(new SingleUploadFile(file, key, metadata));
     }
 }

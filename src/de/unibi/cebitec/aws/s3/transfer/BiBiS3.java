@@ -36,6 +36,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import org.apache.commons.cli.CommandLine;
@@ -139,13 +140,11 @@ public class BiBiS3 {
                 .addOption(OptionBuilder.withLongOpt("grid-download-feature-fastq").withDescription("Download separate parts of a fastq file to different nodes into different files and make sure the file splits conserve the fastq file format.").create())
                 .addOption(OptionBuilder.withLongOpt("grid-nodes").hasArg().withDescription("Number of grid nodes.").create())
                 .addOption(OptionBuilder.withLongOpt("grid-current-node").hasArg().withDescription("Identifier of the node that is running this program (must be 1 >= i <= grid-nodes.").create())
-                .addOption(OptionBuilder.withLongOpt("upload-list-stdin").withDescription("Take list of files to upload from STDIN. In this case the SRC argument has to be omitted.").create());
-
-
+                .addOption(OptionBuilder.withLongOpt("upload-list-stdin").withDescription("Take list of files to upload from STDIN. In this case the SRC argument has to be omitted.").create())
+                .addOption(OptionBuilder.withLongOpt("metadata").withDescription("Adds metadata to all uploads. Can be specified multiple times for additional metadata.").hasArgs(2).withArgName("key> <value").create("m"));
 
         /**
-         * Get the root logger instance of the logback logger implementation to
-         * be able to set the logging level at runtime.
+         * Get the root logger instance of the logback logger implementation to be able to set the logging level at runtime.
          */
         ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         root.setLevel(ch.qos.logback.classic.Level.INFO);
@@ -186,8 +185,7 @@ public class BiBiS3 {
             CommandLine cl = cli.parse(actionOptions, args);
             String[] positionalArgs = cl.getArgs();
             /**
-             * Adjust number of required CLI parameters depending on whether
-             * upload-list-stdin is set.
+             * Adjust number of required CLI parameters depending on whether upload-list-stdin is set.
              */
             if (cl.hasOption("upload-list-stdin")) {
                 if (positionalArgs.length < 1) {
@@ -235,7 +233,6 @@ public class BiBiS3 {
                 dest = positionalArgs[1];
             }
 
-
             /**
              * Streaming download has its own handler.
              */
@@ -278,8 +275,7 @@ public class BiBiS3 {
             }
 
             /**
-             * Set up and run the uploader/downloader. This is where it gets
-             * serious.
+             * Set up and run the uploader/downloader.
              */
             try {
                 try {
@@ -388,10 +384,18 @@ public class BiBiS3 {
                                 uploadTargetKeys.put(srcPath, key);
                             }
                         }
+                        ObjectMetadata metadata = new ObjectMetadata();
+                        if (cl.hasOption("metadata")) {
+                            log.info("Adding metadata to all uploads:");
+                            for (Entry<Object, Object> entry : cl.getOptionProperties("metadata").entrySet()) {
+                                log.info("    " + entry.getKey().toString() + " = " + entry.getValue().toString());
+                                metadata.addUserMetadata(entry.getKey().toString(), entry.getValue().toString());
+                            }
+                        }
                         /**
                          * Instantiate uploader and start upload. Finally.
                          */
-                        Uploader up = new Uploader(s3, filesToUpload, s3uri.getBucket(), uploadTargetKeys, numOfThreads, chunkSize);
+                        Uploader up = new Uploader(s3, filesToUpload, s3uri.getBucket(), uploadTargetKeys, numOfThreads, chunkSize, metadata);
                         up.upload();
                         log.info("Upload successful.");
 
@@ -485,9 +489,7 @@ public class BiBiS3 {
                         Downloader down;
                         if (cl.hasOption("grid-download") && cl.hasOption("grid-nodes") && cl.hasOption("grid-current-node")) {
                             /**
-                             * If this download is a grid download, then parse
-                             * additional CLI parameters and create an
-                             * organizer.
+                             * If this download is a grid download, then parse additional CLI parameters and create an organizer.
                              */
                             int nodesCount = Integer.parseInt(cl.getOptionValue("grid-nodes"));
                             int currentNode = Integer.parseInt(cl.getOptionValue("grid-current-node"));
@@ -526,9 +528,7 @@ public class BiBiS3 {
                         UrlDownloader down;
                         if (cl.hasOption("grid-download") && cl.hasOption("grid-nodes") && cl.hasOption("grid-current-node")) {
                             /**
-                             * If this download is a grid download, then parse
-                             * additional CLI parameters and create an
-                             * organizer.
+                             * If this download is a grid download, then parse additional CLI parameters and create an organizer.
                              */
                             int nodesCount = Integer.parseInt(cl.getOptionValue("grid-nodes"));
                             int currentNode = Integer.parseInt(cl.getOptionValue("grid-current-node"));

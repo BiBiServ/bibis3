@@ -5,6 +5,7 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadResult;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.StorageClass;
 import de.unibi.cebitec.aws.s3.transfer.BiBiS3;
 import de.unibi.cebitec.aws.s3.transfer.model.InputFileList;
 import de.unibi.cebitec.aws.s3.transfer.model.Measurements;
@@ -30,23 +31,25 @@ import org.slf4j.LoggerFactory;
 public class Uploader {
 
     public static final Logger log = LoggerFactory.getLogger(Uploader.class);
-    private InputFileList<Path> inputFiles;
-    private OutputFileList<Path, String> outputFiles;
-    private String bucketName;
-    private List<UploadFile> files;
-    private List<IUploadChunk> chunks;
+    private final InputFileList<Path> inputFiles;
+    private final OutputFileList<Path, String> outputFiles;
+    private final String bucketName;
+    private final List<UploadFile> files;
+    private final List<IUploadChunk> chunks;
     private final AmazonS3 s3;
-    private int numberOfThreads;
-    private long chunkSize;
+    private final int numberOfThreads;
+    private final long chunkSize;
     private final ObjectMetadata metadata;
+    private final boolean reducedRedundancy;
 
-    public Uploader(AmazonS3Client s3, InputFileList<Path> inputFiles, String bucketName, OutputFileList uploadTargetKeys, int numberOfThreads, long chunkSize, ObjectMetadata metadata) {
+    public Uploader(AmazonS3Client s3, InputFileList<Path> inputFiles, String bucketName, OutputFileList uploadTargetKeys, int numberOfThreads, long chunkSize, ObjectMetadata metadata, boolean reducedRedundancy) {
         this.inputFiles = inputFiles;
         this.outputFiles = uploadTargetKeys;
         this.bucketName = bucketName;
         this.numberOfThreads = numberOfThreads;
         this.chunkSize = chunkSize;
         this.metadata = metadata;
+        this.reducedRedundancy = reducedRedundancy;
 
         this.files = new ArrayList<>();
         this.chunks = new ArrayList<>();
@@ -58,9 +61,9 @@ public class Uploader {
         for (Map.Entry<Path, Long> item : this.inputFiles.entrySet()) {
             Measurements.addToOverallBytes(item.getValue());
             if (item.getValue() < BiBiS3.MIN_CHUNK_SIZE) {
-                addSingleFile(item.getKey(), this.outputFiles.get(item.getKey()), this.metadata);
+                addSingleFile(item.getKey(), this.outputFiles.get(item.getKey()), this.metadata, this.reducedRedundancy);
             } else {
-                addMultipartFile(item.getKey(), this.outputFiles.get(item.getKey()), this.metadata);
+                addMultipartFile(item.getKey(), this.outputFiles.get(item.getKey()), this.metadata, this.reducedRedundancy);
             }
         }
 
@@ -119,15 +122,18 @@ public class Uploader {
         log.info("Overall average upload speed: {}", Measurements.getEndResult());
     }
 
-    private void addMultipartFile(Path file, String key, ObjectMetadata metadata) {
+    private void addMultipartFile(Path file, String key, ObjectMetadata metadata, boolean reducedRedundancy) {
         MultipartUploadFile mFile = new MultipartUploadFile(file, key, this.chunkSize);
         this.files.add(mFile);
         InitiateMultipartUploadRequest mReq = new InitiateMultipartUploadRequest(this.bucketName, mFile.getKey(), metadata);
+        if (reducedRedundancy) {
+            mReq.setStorageClass(StorageClass.ReducedRedundancy);
+        }
         InitiateMultipartUploadResult mRes = this.s3.initiateMultipartUpload(mReq);
         mFile.setUploadId(mRes.getUploadId());
     }
 
-    private void addSingleFile(Path file, String key, ObjectMetadata metadata) {
-        this.files.add(new SingleUploadFile(file, key, metadata));
+    private void addSingleFile(Path file, String key, ObjectMetadata metadata, boolean reducedRedundancy) {
+        this.files.add(new SingleUploadFile(file, key, metadata, reducedRedundancy));
     }
 }

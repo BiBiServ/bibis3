@@ -12,6 +12,7 @@ import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import de.unibi.cebitec.aws.s3.transfer.ctrl.Cleaner;
 import de.unibi.cebitec.aws.s3.transfer.ctrl.Downloader;
 import de.unibi.cebitec.aws.s3.transfer.ctrl.Uploader;
 import de.unibi.cebitec.aws.s3.transfer.ctrl.UrlDownloader;
@@ -103,7 +104,8 @@ public class BiBiS3 {
         intentOptions
                 .addOption(OptionBuilder.withLongOpt("upload").withDescription("Upload files. DEST has to be an S3 URL.").create("u"))
                 .addOption(OptionBuilder.withLongOpt("download").withDescription("Download files. SRC has to be an S3 URL.").create("d"))
-                .addOption(OptionBuilder.withLongOpt("download-url").withDescription("Download a file with Http GET from (presigned) S3-Http-Url. SRC has to be an Http-URL with Range support for Http GET.").create("g"));
+                .addOption(OptionBuilder.withLongOpt("download-url").withDescription("Download a file with Http GET from (presigned) S3-Http-Url. SRC has to be an Http-URL with Range support for Http GET.").create("g"))
+                .addOption(OptionBuilder.withLongOpt("clean-up-parts").withDescription("Clean up all unfinished parts of previous multipart uploads that were initiated on the specified bucket over a week ago. BUCKET has to be an S3 URL.").create("c"));
 
         Map<String, Region> regions = S3RegionsProvider.getS3Regions();
         // helptext for region selection
@@ -141,7 +143,8 @@ public class BiBiS3 {
                 .addOption(OptionBuilder.withLongOpt("grid-nodes").hasArg().withDescription("Number of grid nodes.").create())
                 .addOption(OptionBuilder.withLongOpt("grid-current-node").hasArg().withDescription("Identifier of the node that is running this program (must be 1 >= i <= grid-nodes.").create())
                 .addOption(OptionBuilder.withLongOpt("upload-list-stdin").withDescription("Take list of files to upload from STDIN. In this case the SRC argument has to be omitted.").create())
-                .addOption(OptionBuilder.withLongOpt("metadata").withDescription("Adds metadata to all uploads. Can be specified multiple times for additional metadata.").hasArgs(2).withArgName("key> <value").create("m"));
+                .addOption(OptionBuilder.withLongOpt("metadata").withDescription("Adds metadata to all uploads. Can be specified multiple times for additional metadata.").hasArgs(2).withArgName("key> <value").create("m"))
+                .addOption(OptionBuilder.withLongOpt("reduced-redundancy").withDescription("Set the storage class for uploads to Reduced Redundancy instead of Standard.").create());
 
         /**
          * Get the root logger instance of the logback logger implementation to be able to set the logging level at runtime.
@@ -185,7 +188,7 @@ public class BiBiS3 {
             CommandLine cl = cli.parse(actionOptions, args);
             String[] positionalArgs = cl.getArgs();
             /**
-             * Adjust number of required CLI parameters depending on whether upload-list-stdin is set.
+             * Adjust number of required CLI parameters depending on whether upload-list-stdin is set or whether this is a clean up operation.
              */
             if (cl.hasOption("upload-list-stdin")) {
                 if (positionalArgs.length < 1) {
@@ -194,10 +197,16 @@ public class BiBiS3 {
                     throw new ParseException("Using STDIN file list. SRC has to be omitted.");
                 }
             } else {
-                if (positionalArgs.length < 1) {
-                    throw new ParseException("Missing required arguments: SRC DEST");
-                } else if (positionalArgs.length < 2) {
-                    throw new ParseException("Missing required argument: DEST");
+                if (cl.hasOption("clean-up-parts")) {
+                    if (positionalArgs.length != 1) {
+                        throw new ParseException("Missing required argument: BUCKET");
+                    }
+                } else {
+                    if (positionalArgs.length < 1) {
+                        throw new ParseException("Missing required arguments: SRC DEST");
+                    } else if (positionalArgs.length < 2) {
+                        throw new ParseException("Missing required argument: DEST");
+                    }
                 }
             }
 
@@ -289,7 +298,9 @@ public class BiBiS3 {
                         throw new ParseException("Invalid integer value for -t");
                     }
                     clientConfig.setMaxConnections(numOfThreads + 10);
-                    log.info("== Copying from '{}' to '{}' in {} threads. Chunk size: {} Bytes", src, dest, numOfThreads, chunkSize);
+                    if (cl.hasOption("u") || cl.hasOption("d") || cl.hasOption("g")) {
+                        log.info("== Copying from '{}' to '{}' in {} threads. Chunk size: {} Bytes", src, dest, numOfThreads, chunkSize);
+                    }
 
                     AmazonS3Client s3 = new AmazonS3Client(creds, clientConfig);
                     Region region = null;
@@ -395,7 +406,7 @@ public class BiBiS3 {
                         /**
                          * Instantiate uploader and start upload. Finally.
                          */
-                        Uploader up = new Uploader(s3, filesToUpload, s3uri.getBucket(), uploadTargetKeys, numOfThreads, chunkSize, metadata);
+                        Uploader up = new Uploader(s3, filesToUpload, s3uri.getBucket(), uploadTargetKeys, numOfThreads, chunkSize, metadata, cl.hasOption("reduced-redundancy"));
                         up.upload();
                         log.info("Upload successful.");
 
@@ -559,6 +570,11 @@ public class BiBiS3 {
                          */
                         down.download();
                         log.info("Download successful.");
+                    } else if (cl.hasOption("c")) {
+                        S3URI s3uri = new S3URI(dest);
+                        log.info("== Bucket: {}", s3uri.getBucket());
+                        Cleaner cleaner = new Cleaner(s3, s3uri.getBucket());
+                        cleaner.cleanUpParts();
                     }
                     System.exit(0);
                 } catch (IllegalArgumentException e) {
@@ -609,6 +625,6 @@ public class BiBiS3 {
         }
         String header = "";
         String footer = "S3 URLs have to be in the form of: 's3://<bucket>/<key>', e. g. 's3://mybucket/mydatafolder/data.txt'. When using recursive transfer (-r) the trailing slash of the directory is mandatory, e. g. 's3://mybucket/mydatafolder/'.";
-        help.printHelp("java -jar " + jarfilename + " -u|d|g SRC DEST", header, opts, footer);
+        help.printHelp("java -jar " + jarfilename + " -u|d|g|c SRC DEST", header, opts, footer);
     }
 }

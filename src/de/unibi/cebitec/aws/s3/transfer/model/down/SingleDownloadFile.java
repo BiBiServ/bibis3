@@ -32,10 +32,15 @@ public class SingleDownloadFile extends DownloadFile implements IDownloadChunkS3
             if (parentDir != null) {
                 parentDir.toFile().mkdirs();
             }
-            if (!this.targetFile.toFile().isDirectory()) {
-                long bytesRead = Files.copy(in, this.targetFile, StandardCopyOption.REPLACE_EXISTING);
-                if (bytesRead != this.size) {
-                    throw new IOException("File transfer of file '" + this.targetFile + "' has been interrupted!");
+            if (obj.getKey().endsWith("/") && obj.getObjectMetadata().getContentLength() == 0) {
+                this.targetFile.toFile().mkdirs();
+                log.debug("Empty folder file detected. Creating empty folder on the receiving end ....");
+            } else {
+                if (!this.targetFile.toFile().isDirectory()) {
+                    long bytesRead = Files.copy(in, this.targetFile, StandardCopyOption.REPLACE_EXISTING);
+                    if (bytesRead != this.size) {
+                        throw new IOException("File transfer of file '" + this.targetFile + "' has been interrupted!");
+                    }
                 }
             }
             Measurements.countChunkAsFinished();

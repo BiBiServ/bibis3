@@ -3,7 +3,7 @@
   <taskdef resource="net/sf/antcontrib/antlib.xml"/>
   <import file="nbproject/build-impl.xml"/>
   
-  <property name="version" value="1.6.0"/>
+  <property name="version" value="1.6.1"/>
   
   <target name="versioning-hashes">
     <echo message="Version: ${version}" />
@@ -65,27 +65,34 @@
       <zipfileset excludes="META-INF/*" src="${default.jar}"/>
       <zipgroupfileset dir="${lib.dir}"
                        excludes="aws-java-sdk*,aspectj*,freemarker*,mail*,slf4j-log4j*,log4j*" />
-      <zipfileset src="${lib.dir}/aws-java-sdk-1.9.27.jar">
+      <zipfileset src="${lib.dir}/aws-java-sdk-1.10.16.jar">
         <exclude name="com/amazonaws/services/autoscaling/**/*" />
         <exclude name="com/amazonaws/services/codedeploy/**/*" />
         <exclude name="com/amazonaws/services/config/**/*" />
         <exclude name="com/amazonaws/services/cloudformation/**/*" />
         <exclude name="com/amazonaws/services/cloudfront/**/*" />
         <exclude name="com/amazonaws/services/cloudfront_2012_03_15/**/*" />
+        <exclude name="com/amazonaws/services/cloudhsm/**/*" />
         <exclude name="com/amazonaws/services/cloudsearch/**/*" />
         <exclude name="com/amazonaws/services/cloudsearchdomain/**/*" />
         <exclude name="com/amazonaws/services/cloudsearchv2/**/*" />
         <exclude name="com/amazonaws/services/cloudtrail/**/*" />
         <exclude name="com/amazonaws/services/cloudwatch/**/*" />
+        <exclude name="com/amazonaws/services/codecommit/**/*" />
+        <exclude name="com/amazonaws/services/codepipeline/**/*" />
         <exclude name="com/amazonaws/services/cognitosync/**/*" />
         <exclude name="com/amazonaws/services/cognitoidentity/**/*" />
         <exclude name="com/amazonaws/services/datapipeline/**/*" />
+        <exclude name="com/amazonaws/services/devicefarm/**/*" />
         <exclude name="com/amazonaws/services/directconnect/**/*" />
+        <exclude name="com/amazonaws/services/directory/**/*" />
         <exclude name="com/amazonaws/services/dynamodb/**/*" />
         <exclude name="com/amazonaws/services/dynamodbv2/**/*" />
         <exclude name="com/amazonaws/services/ec2/**/*" />
+        <exclude name="com/amazonaws/services/ecs/**/*" />
         <exclude name="com/amazonaws/services/elasticache/**/*" />
         <exclude name="com/amazonaws/services/elasticbeanstalk/**/*" />
+        <exclude name="com/amazonaws/services/elasticfilesystem/**/*" />
         <exclude name="com/amazonaws/services/elasticloadbalancing/**/*" />
         <exclude name="com/amazonaws/services/elasticmapreduce/**/*" />
         <exclude name="com/amazonaws/services/elastictranscoder/**/*" />
@@ -96,6 +103,7 @@
         <exclude name="com/amazonaws/services/kms/**/*" />
         <exclude name="com/amazonaws/services/lambda/**/*" />
         <exclude name="com/amazonaws/services/logs/**/*" />
+        <exclude name="com/amazonaws/services/machinelearning/**/*" />
         <exclude name="com/amazonaws/services/opsworks/**/*" />
         <exclude name="com/amazonaws/services/rds/**/*" />
         <exclude name="com/amazonaws/services/redshift/**/*" />
@@ -104,11 +112,14 @@
         <exclude name="com/amazonaws/services/securitytoken/**/*" />
         <exclude name="com/amazonaws/services/simpledb/**/*" />
         <exclude name="com/amazonaws/services/simpleemail/**/*" />
+        <exclude name="com/amazonaws/services/simplesystemsmanagement/**/*" />
         <exclude name="com/amazonaws/services/simpleworkflow/**/*" />
         <exclude name="com/amazonaws/services/sns/**/*" />
         <exclude name="com/amazonaws/services/sqs/**/*" />
         <exclude name="com/amazonaws/services/storagegateway/**/*" />
         <exclude name="com/amazonaws/services/support/**/*" />
+        <exclude name="com/amazonaws/services/workspaces/**/*" />
+        <exclude name="models/**/*" />
       </zipfileset>
     </jar> 
     <delete file="${default.jar}" failonerror="false"/>

@@ -5,14 +5,15 @@ import com.amazonaws.services.s3.model.AbortMultipartUploadRequest;
 import com.amazonaws.services.s3.model.ListMultipartUploadsRequest;
 import com.amazonaws.services.s3.model.MultipartUpload;
 import com.amazonaws.services.s3.model.MultipartUploadListing;
+
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Cleaner {
-
     private static final Logger log = LoggerFactory.getLogger(Cleaner.class);
     private final AmazonS3Client s3;
     private final String bucketName;
@@ -27,7 +28,7 @@ public class Cleaner {
     }
 
     public void cleanUpParts() {
-        log.info("Cleaning up the remainings of incomplete multipart uploads for this bucket that are older than a week ...");
+        log.info("Cleaning up the remains of incomplete multipart uploads for this bucket that are older than a week ...");
         log.trace("Threshold date: {}", this.thresholdDateInThePast);
         MultipartUploadListing uploadListing = this.s3.listMultipartUploads(new ListMultipartUploadsRequest(this.bucketName));
         if (uploadListing.getMultipartUploads().isEmpty()) {

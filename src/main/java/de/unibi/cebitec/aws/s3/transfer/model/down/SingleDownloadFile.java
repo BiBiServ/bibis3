@@ -4,16 +4,17 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import de.unibi.cebitec.aws.s3.transfer.model.Measurements;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SingleDownloadFile extends DownloadFile implements IDownloadChunkS3 {
-
     public static final Logger log = LoggerFactory.getLogger(SingleDownloadFile.class);
     private long size;
 

@@ -3,6 +3,7 @@ package de.unibi.cebitec.aws.s3.transfer.model.up;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.CompleteMultipartUploadRequest;
 import com.amazonaws.services.s3.model.PartETag;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -11,11 +12,11 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Queue;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class MultipartUploadFile extends UploadFile {
-
     public static final Logger log = LoggerFactory.getLogger(MultipartUploadFile.class);
     protected String uploadId;
     private Queue<UploadPart> remainingParts;
@@ -23,18 +24,11 @@ public class MultipartUploadFile extends UploadFile {
 
     public MultipartUploadFile(Path file, String key, final long initialPartSize) {
         super(file, key);
-        this.remainingParts = new PriorityQueue<>(11, new Comparator<UploadPart>() {
-            @Override
-            public int compare(UploadPart p1, UploadPart p2) {
-                if (p1.getPartNumber() == p2.getPartNumber()) {
-                    return 0;
-                }
-                if (p1.getPartNumber() < p2.getPartNumber()) {
-                    return -1;
-                } else {
-                    return 1;
-                }
+        this.remainingParts = new PriorityQueue<>(11, (p1, p2) -> {
+            if (p1.getPartNumber() == p2.getPartNumber()) {
+                return 0;
             }
+            return p1.getPartNumber() < p2.getPartNumber() ? -1 : 1;
         });
         this.registeredParts = new ArrayList<>();
 

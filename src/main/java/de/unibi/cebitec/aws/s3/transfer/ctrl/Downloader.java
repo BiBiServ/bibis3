@@ -15,6 +15,7 @@ import de.unibi.cebitec.aws.s3.transfer.model.down.SingleDownloadFile;
 import de.unibi.cebitec.aws.s3.transfer.model.down.TransferDownloadThread;
 import de.unibi.cebitec.aws.s3.transfer.model.features.Fastq;
 import de.unibi.cebitec.aws.s3.transfer.util.UnrecoverableErrorException;
+
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,11 +26,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Downloader {
-
     public static final Logger log = LoggerFactory.getLogger(Downloader.class);
     private String bucketName;
     private InputFileList<String> inputFiles;
@@ -62,10 +63,7 @@ public class Downloader {
     }
 
     public void download() throws Exception {
-
-
         for (Map.Entry<String, Long> item : this.inputFiles.entrySet()) {
-
             if (item.getValue() <= this.chunkSize) {
                 this.files.add(new SingleDownloadFile(item.getKey(), this.outputFiles.get(item.getKey()), item.getValue()));
             } else {

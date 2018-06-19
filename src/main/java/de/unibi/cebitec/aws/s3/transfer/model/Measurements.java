@@ -1,11 +1,11 @@
 package de.unibi.cebitec.aws.s3.transfer.model;
 
 import java.text.DecimalFormat;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Measurements {
-
     private static long overallBytes;
     private static long overallChunks;
     private static long finishedChunks;
@@ -65,7 +65,7 @@ public class Measurements {
         if (seconds == 0) {
             return "unknown";
         }
-        long bps = (long) (overallBytes / seconds);
+        long bps = overallBytes / seconds;
         return formatResult(bps, "/s");
     }
 

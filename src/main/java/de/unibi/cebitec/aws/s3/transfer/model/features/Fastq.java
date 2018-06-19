@@ -6,19 +6,21 @@ import com.amazonaws.services.s3.model.S3Object;
 import de.unibi.cebitec.aws.s3.transfer.BiBiS3;
 import de.unibi.cebitec.aws.s3.transfer.model.down.DownloadPart;
 import de.unibi.cebitec.aws.s3.transfer.model.down.MultipartDownloadFile;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Fastq {
-
     private static final Logger log = LoggerFactory.getLogger(Fastq.class);
     private AmazonS3 s3;
     private String bucketName;
@@ -143,7 +145,7 @@ public class Fastq {
 
                 log.debug("Requesting data sample in range [{},{}]", start, end);
 
-                DefaultHttpClient httpClient = new DefaultHttpClient();
+                HttpClient httpClient = HttpClientBuilder.create().build();
                 HttpGet httpGet = new HttpGet(url);
                 httpGet.addHeader("Range", "bytes=" + start + "-" + end);
 

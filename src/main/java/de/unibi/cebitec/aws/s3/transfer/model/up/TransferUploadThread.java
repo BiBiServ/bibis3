@@ -2,12 +2,13 @@ package de.unibi.cebitec.aws.s3.transfer.model.up;
 
 import com.amazonaws.services.s3.AmazonS3;
 import de.unibi.cebitec.aws.s3.transfer.model.up.IUploadChunk;
+
 import java.util.concurrent.Callable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class TransferUploadThread implements Callable<Void> {
-
     public static final Logger log = LoggerFactory.getLogger(TransferUploadThread.class);
     private AmazonS3 s3;
     private String bucketName;

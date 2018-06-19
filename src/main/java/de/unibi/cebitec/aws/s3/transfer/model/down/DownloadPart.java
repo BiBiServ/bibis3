@@ -2,24 +2,22 @@
 package de.unibi.cebitec.aws.s3.transfer.model.down;
 
 
-public interface DownloadPart extends IDownloadChunk{
-    
-    public MultipartDownloadFile getMultipartDownloadFile();
+public interface DownloadPart extends IDownloadChunk {
+    MultipartDownloadFile getMultipartDownloadFile();
 
-    public int getPartNumber();
+    int getPartNumber();
 
-    public void setPartNumber(int partNumber);
-    
-    public long getInputOffset();
+    void setPartNumber(int partNumber);
 
-    public void setInputOffset(long inputOffset);
+    long getInputOffset();
 
-    public long getOutputOffset();
+    void setInputOffset(long inputOffset);
 
-    public void setOutputOffset(long outputOffset);
+    long getOutputOffset();
 
-    public long getPartSize();
+    void setOutputOffset(long outputOffset);
 
-    public void setPartSize(long partSize);
-    
+    long getPartSize();
+
+    void setPartSize(long partSize);
 }

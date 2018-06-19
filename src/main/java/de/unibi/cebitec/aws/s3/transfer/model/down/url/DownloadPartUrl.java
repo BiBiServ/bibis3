@@ -3,19 +3,21 @@ package de.unibi.cebitec.aws.s3.transfer.model.down.url;
 import de.unibi.cebitec.aws.s3.transfer.BiBiS3;
 import de.unibi.cebitec.aws.s3.transfer.model.down.*;
 import de.unibi.cebitec.aws.s3.transfer.model.Measurements;
+
 import java.io.IOException;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class DownloadPartUrl implements IDownloadChunkUrl, DownloadPart {
-
     public static final Logger log = LoggerFactory.getLogger(DownloadPartS3.class);
     private MultipartDownloadFile multipartDownloadFile;
     private int partNumber;
@@ -32,7 +34,7 @@ public class DownloadPartUrl implements IDownloadChunkUrl, DownloadPart {
         long offset = this.inputOffset;
         long remainingBytes = this.partSize;
         for (int i = 0; i < BiBiS3.INCOMPLETE_HTTP_RESPONSE_RETRIES; i++) {
-            DefaultHttpClient httpClient = new DefaultHttpClient();
+            HttpClient httpClient = HttpClientBuilder.create().build();
             HttpGet httpGet = new HttpGet(url);
             long end = offset + remainingBytes;
             httpGet.addHeader("Range", "bytes=" + offset + "-" + end);

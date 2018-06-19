@@ -3,7 +3,6 @@ package de.unibi.cebitec.aws.s3.transfer.model.up;
 import java.nio.file.Path;
 
 public class UploadFile {
-
     protected Path file;
     protected String key;
 

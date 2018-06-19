@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Scanner;
 
 public class StdinInputReader {
-
     public List<String> getStdinLines() {
         List<String> lines = new ArrayList<>();
         Scanner scanner = new Scanner(System.in);

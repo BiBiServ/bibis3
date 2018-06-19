@@ -19,6 +19,4 @@ public class DownloadFile {
     public Path getTargetFile() {
         return targetFile;
     }
-    
-    
 }

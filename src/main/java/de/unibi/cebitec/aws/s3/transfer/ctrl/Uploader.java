@@ -15,6 +15,7 @@ import de.unibi.cebitec.aws.s3.transfer.model.up.MultipartUploadFile;
 import de.unibi.cebitec.aws.s3.transfer.model.up.SingleUploadFile;
 import de.unibi.cebitec.aws.s3.transfer.model.up.TransferUploadThread;
 import de.unibi.cebitec.aws.s3.transfer.model.up.UploadFile;
+
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,11 +26,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Uploader {
-
     public static final Logger log = LoggerFactory.getLogger(Uploader.class);
     private final InputFileList<Path> inputFiles;
     private final OutputFileList<Path, String> outputFiles;
@@ -42,7 +43,9 @@ public class Uploader {
     private final ObjectMetadata metadata;
     private final boolean reducedRedundancy;
 
-    public Uploader(AmazonS3Client s3, InputFileList<Path> inputFiles, String bucketName, OutputFileList uploadTargetKeys, int numberOfThreads, long chunkSize, ObjectMetadata metadata, boolean reducedRedundancy) {
+    public Uploader(AmazonS3Client s3, InputFileList<Path> inputFiles, String bucketName,
+                    OutputFileList uploadTargetKeys, int numberOfThreads, long chunkSize,
+                    ObjectMetadata metadata, boolean reducedRedundancy) {
         this.inputFiles = inputFiles;
         this.outputFiles = uploadTargetKeys;
         this.bucketName = bucketName;
@@ -57,13 +60,12 @@ public class Uploader {
     }
 
     public void upload() throws Exception {
-
-        for (Map.Entry<Path, Long> item : this.inputFiles.entrySet()) {
+        for (Map.Entry<Path, Long> item : inputFiles.entrySet()) {
             Measurements.addToOverallBytes(item.getValue());
             if (item.getValue() < BiBiS3.MIN_CHUNK_SIZE) {
-                addSingleFile(item.getKey(), this.outputFiles.get(item.getKey()), this.metadata, this.reducedRedundancy);
+                addSingleFile(item.getKey(), outputFiles.get(item.getKey()), metadata, reducedRedundancy);
             } else {
-                addMultipartFile(item.getKey(), this.outputFiles.get(item.getKey()), this.metadata, this.reducedRedundancy);
+                addMultipartFile(item.getKey(), outputFiles.get(item.getKey()), metadata, reducedRedundancy);
             }
         }
 

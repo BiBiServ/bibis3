@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class UploadPart implements IUploadChunk {
-
     public static final Logger log = LoggerFactory.getLogger(UploadPart.class);
     private MultipartUploadFile multipartUploadFile;
     private int partNumber;

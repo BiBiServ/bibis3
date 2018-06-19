@@ -5,15 +5,16 @@ import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import de.unibi.cebitec.aws.s3.transfer.BiBiS3;
 import de.unibi.cebitec.aws.s3.transfer.model.Measurements;
+
 import java.io.IOException;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class DownloadPartS3 implements IDownloadChunkS3, DownloadPart {
-
     public static final Logger log = LoggerFactory.getLogger(DownloadPartS3.class);
     private MultipartDownloadFile multipartDownloadFile;
     private int partNumber;

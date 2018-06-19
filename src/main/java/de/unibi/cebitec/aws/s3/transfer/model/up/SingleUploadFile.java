@@ -6,14 +6,15 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.StorageClass;
 import de.unibi.cebitec.aws.s3.transfer.model.Measurements;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SingleUploadFile extends UploadFile implements IUploadChunk {
-
     public static final Logger log = LoggerFactory.getLogger(SingleUploadFile.class);
     private final ObjectMetadata metadata;
     private final boolean reducedRedundancy;

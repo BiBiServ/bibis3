@@ -22,13 +22,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class UrlDownloader {
-
     public static final Logger log = LoggerFactory.getLogger(UrlDownloader.class);
     private String url;
     private Path outputFile;
@@ -60,7 +60,7 @@ public class UrlDownloader {
 
     public void download() throws Exception {
         //find out length of requested download
-        DefaultHttpClient httpClient = new DefaultHttpClient();
+        HttpClient httpClient = HttpClientBuilder.create().build();
         HttpGet httpGet = new HttpGet(url);
         HttpResponse httpResponse = httpClient.execute(httpGet);
         HttpEntity httpEntity = httpResponse.getEntity();

@@ -1,12 +1,13 @@
 package de.unibi.cebitec.aws.s3.transfer.model;
 
 import de.unibi.cebitec.aws.s3.transfer.model.down.IDownloadChunk;
+
 import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class GridDownloadOrganizer {
-
     private static final Logger log = LoggerFactory.getLogger(GridDownloadOrganizer.class);
     private int nodesCount;
     private int currentNode;

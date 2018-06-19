@@ -10,8 +10,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class CredentialsProvider {
-    public static final String DEFAULT_PROPERTIES_DIRNAME = System.getProperty("user.home");
-    public static final String DEFAULT_PROPERTIES_FILENAME = ".aws-credentials.properties";
+    private static final String DEFAULT_PROPERTIES_DIRNAME = System.getProperty("user.home");
+    private static final String DEFAULT_PROPERTIES_FILENAME = ".aws-credentials.properties";
 
     public static AWSCredentials getCredentials() {
         Path credentialsFilePath = FileSystems.getDefault().getPath(DEFAULT_PROPERTIES_DIRNAME, DEFAULT_PROPERTIES_FILENAME);

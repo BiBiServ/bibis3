@@ -43,18 +43,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * BiBiS3. S3 is a storage service for huge amounts of data. EC2 instances can
- * be used to process that data but first they need a way to get to it. BiBiS3
- * probably takes the most effective approach to transfer data both to and from
- * S3 in a fast manner: Massive parallelization of everything. It takes into
- * account that a fileset may consist of very few large files or lots of small
- * files. Small files and chunks of large files are processed in parallel and
- * therefore allow for data-independent constantly high speed results.
+ * BiBiS3. S3 is a storage service for huge amounts of data. EC2 instances can be used to process that data but
+ * first they need a way to get to it. BiBiS3 probably takes the most effective approach to transfer data both
+ * to and from S3 in a fast manner: Massive parallelization of everything. It takes into account that a fileset
+ * may consist of very few large files or lots of small files. Small files and chunks of large files are processed
+ * in parallel and therefore allow for data-independent constantly high speed results.
  *
  * @author christian@cebitec.uni-bielefeld.de
  */
 public class BiBiS3 {
-
     public static final Logger log = LoggerFactory.getLogger(BiBiS3.class);
     public static final long CHUNK_SIZE = 26214400; // 25MB
     public static final long MIN_CHUNK_SIZE = 5242880; // 5MB is dictated by s3
@@ -98,7 +95,7 @@ public class BiBiS3 {
                 .addOption(Option.builder("c").longOpt("clean-up-parts").desc("Clean up all unfinished parts of previous multipart uploads that were initiated on the specified bucket over a week ago. BUCKET has to be an S3 URL.").build());
 
         Map<String, Region> regions = S3RegionsProvider.getS3Regions();
-        // helptext for region selection
+        // help text for region selection
         StringBuilder s3RegionInfo = new StringBuilder();
         s3RegionInfo.append("S3 region. Has to be one of: ");
         for (String regionName : regions.keySet()) {
@@ -166,8 +163,7 @@ public class BiBiS3 {
         } catch (ParseException ignored) {
         }
 
-        AWSCredentials creds = CredentialsProvider.getCredentials();
-
+        AWSCredentials credentials = null;
         try {
             CommandLine cl = cli.parse(actionOptions, args);
             String[] positionalArgs = cl.getArgs();
@@ -205,10 +201,14 @@ public class BiBiS3 {
             // Override file credentials with CLI parameters if present.
             if (cl.hasOption("access-key") && cl.hasOption("secret-key")) {
                 if (cl.hasOption("session-token")) {
-                    creds = new BasicSessionCredentials(cl.getOptionValue("access-key"), cl.getOptionValue("secret-key"), cl.getOptionValue("session-token"));
+                    credentials = new BasicSessionCredentials(cl.getOptionValue("access-key"),
+                            cl.getOptionValue("secret-key"), cl.getOptionValue("session-token"));
                 } else {
-                    creds = new BasicAWSCredentials(cl.getOptionValue("access-key"), cl.getOptionValue("secret-key"));
+                    credentials = new BasicAWSCredentials(cl.getOptionValue("access-key"),
+                            cl.getOptionValue("secret-key"));
                 }
+            } else {
+                credentials = CredentialsProvider.getCredentials();
             }
 
             String src = "";
@@ -228,7 +228,7 @@ public class BiBiS3 {
                     root.setLevel(ch.qos.logback.classic.Level.ERROR);
                     S3URI s3uri = new S3URI(src);
                     Streamer streamer = new Streamer(s3uri.getKey(), FileSystems.getDefault().getPath(dest));
-                    streamer.download(creds, clientConfig, s3uri.getBucket());
+                    streamer.download(credentials, clientConfig, s3uri.getBucket());
                     // Streaming download ends here. No parallelization as of yet.
                     System.exit(0);
                 } else if (cl.hasOption("g")) {
@@ -272,7 +272,7 @@ public class BiBiS3 {
                         log.info("== Copying from '{}' to '{}' in {} threads. Chunk size: {} Bytes", src, dest, numOfThreads, chunkSize);
                     }
 
-                    AmazonS3Client s3 = new AmazonS3Client(creds, clientConfig);
+                    AmazonS3Client s3 = new AmazonS3Client(credentials, clientConfig);
                     Region region = null;
                     // Override region with CLI parameter if present.
                     if (cl.hasOption("region")) {
@@ -286,7 +286,7 @@ public class BiBiS3 {
                     if (region == null) {
                         region = regions.get(DEFAULT_REGION);
                     }
-                    log.info("== Access key: {}   Bucket region: {}", creds == null ? "none" : creds.getAWSAccessKeyId(), region == null ? "default" : region);
+                    log.info("== Access key: {}   Bucket region: {}", credentials == null ? "none" : credentials.getAWSAccessKeyId(), region == null ? "default" : region);
 
                     if (cl.hasOption("u")) {
                         // Upload task.
@@ -297,7 +297,7 @@ public class BiBiS3 {
                         S3URI s3uri = new S3URI(dest);
                         boolean bucketExists = s3.doesBucketExist(s3uri.getBucket());
                         // Create bucket if necessary and requested.
-                        if (cl.hasOption("create-bucket") && !bucketExists && !creds.getAWSSecretKey().isEmpty()) {
+                        if (cl.hasOption("create-bucket") && !bucketExists && !credentials.getAWSSecretKey().isEmpty()) {
                             log.warn("Bucket '{}' does not exist yet and will be created.", s3uri.getBucket());
                             CreateBucketRequest request = new CreateBucketRequest(s3uri.getBucket(), region.toString());
                             s3.createBucket(request);
@@ -533,8 +533,8 @@ public class BiBiS3 {
             switch (e.getErrorCode()) {
                 case "AccessDenied":
                     String ak = "NO-CREDENTIALS-PROVIDED";
-                    if (creds != null) {
-                        ak = creds.getAWSAccessKeyId();
+                    if (credentials != null) {
+                        ak = credentials.getAWSAccessKeyId();
                     }
                     log.error("Access denied. The provided credentials have insufficient "
                             + "rights to access this bucket. Access Key: '{}'", ak);

@@ -24,7 +24,7 @@ public class S3RegionsProvider {
                 }
                 return regions;
             } catch (NullPointerException e) {
-                log.error("Could not get regions for S3 service. ({} attempts made)", BiBiS3.RETRIES);
+                log.error("Could not get regions for S3 service. ({} attempts made)", i);
                 System.exit(1);
             }
         }

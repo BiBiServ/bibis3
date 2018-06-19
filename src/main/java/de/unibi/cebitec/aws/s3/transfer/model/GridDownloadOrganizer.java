@@ -20,12 +20,13 @@ public class GridDownloadOrganizer {
 
     public List<IDownloadChunk> getChunkSubset(List<IDownloadChunk> allChunks) {
         int fromIndex = 0;
-        if (this.currentNode > 1) {
-            fromIndex = (int) Math.ceil(((double) allChunks.size() / (double) this.nodesCount) * ((double) this.currentNode - 1));
+        if (currentNode > 1) {
+            fromIndex = (int) Math.ceil(((double) allChunks.size() / (double) nodesCount) * ((double) currentNode - 1));
         }
-        int toIndex = (int) Math.ceil(((double) allChunks.size() / (double) this.nodesCount) * ((double) this.currentNode));
+        int toIndex = (int) Math.ceil(((double) allChunks.size() / (double) nodesCount) * (double) currentNode);
         List<IDownloadChunk> chunkSubset = allChunks.subList(fromIndex, toIndex);
-        log.info("Selecting chunk subset from {} to {} of {} ({} chunks). Current node is {}/{}.", fromIndex + 1, toIndex, allChunks.size(), chunkSubset.size(), this.currentNode, this.nodesCount);
+        log.info("Selecting chunk subset from {} to {} of {} ({} chunks). Current node is {}/{}.",
+                fromIndex + 1, toIndex, allChunks.size(), chunkSubset.size(), currentNode, nodesCount);
         return chunkSubset;
     }
 

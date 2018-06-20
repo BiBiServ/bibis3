@@ -225,6 +225,30 @@ public class BiBiS3 {
                 dest = positionalArgs[1];
             }
 
+            String region = null;
+            // Override region with CLI parameter if present.
+            if (cl.hasOption("region")) {
+                region = cl.getOptionValue("region");
+            }
+            if (region == null) {
+                region = DEFAULT_REGION;
+            }
+            log.info("== Access key: {}   Bucket region: {}", credentials == null ? "none" : credentials.getAWSAccessKeyId(), region);
+
+            String endpoint = null;
+            // Override endpoint with CLI parameter if present.
+            if (cl.hasOption("endpoint")) {
+                endpoint = cl.getOptionValue("endpoint");
+            }
+
+            AmazonS3ClientBuilder builder = AmazonS3Client.builder();
+            builder = endpoint == null ?
+                    builder.withRegion(region) :
+                    builder.withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(endpoint, region));
+            final AmazonS3 s3 = builder.withClientConfiguration(clientConfig)
+                    .withCredentials(new AWSStaticCredentialsProvider(credentials))
+                    .build();
+
             // Streaming download has its own handler.
             if (cl.hasOption("streaming-download")) {
                 if (cl.hasOption("d")) {
@@ -232,7 +256,7 @@ public class BiBiS3 {
                     root.setLevel(ch.qos.logback.classic.Level.ERROR);
                     S3URI s3uri = new S3URI(src);
                     Streamer streamer = new Streamer(s3uri.getKey(), FileSystems.getDefault().getPath(dest));
-                    streamer.download(credentials, clientConfig, s3uri.getBucket());
+                    streamer.download(s3, s3uri.getBucket());
                     // Streaming download ends here. No parallelization as of yet.
                     System.exit(0);
                 } else if (cl.hasOption("g")) {
@@ -276,30 +300,6 @@ public class BiBiS3 {
                         log.info("== Copying from '{}' to '{}' in {} threads. Chunk size: {} Bytes", src, dest, numOfThreads, chunkSize);
                     }
 
-                    String region = null;
-                    // Override region with CLI parameter if present.
-                    if (cl.hasOption("region")) {
-                        region = cl.getOptionValue("region");
-                    }
-                    if (region == null) {
-                        region = DEFAULT_REGION;
-                    }
-                    log.info("== Access key: {}   Bucket region: {}", credentials == null ? "none" : credentials.getAWSAccessKeyId(), region);
-
-                    String endpoint = null;
-                    // Override endpoint with CLI parameter if present.
-                    if (cl.hasOption("endpoint")) {
-                        endpoint = cl.getOptionValue("endpoint");
-                    }
-
-                    AmazonS3ClientBuilder builder = AmazonS3Client.builder();
-                    builder = endpoint == null ?
-                            builder.withRegion(region) :
-                            builder.withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(endpoint, region));
-                    final AmazonS3 s3 = builder.withClientConfiguration(clientConfig)
-                            .withCredentials(new AWSStaticCredentialsProvider(credentials))
-                            .build();
-
                     if (cl.hasOption("u")) {
                         // Upload task.
                         Path srcPath = null;
@@ -307,7 +307,7 @@ public class BiBiS3 {
                             srcPath = FileSystems.getDefault().getPath(src);
                         }
                         S3URI s3uri = new S3URI(dest);
-                        boolean bucketExists = s3.doesBucketExist(s3uri.getBucket());
+                        boolean bucketExists = s3.doesBucketExistV2(s3uri.getBucket());
                         // Create bucket if necessary and requested.
                         if (cl.hasOption("create-bucket") && !bucketExists && !credentials.getAWSSecretKey().isEmpty()) {
                             log.warn("Bucket '{}' does not exist yet and will be created.", s3uri.getBucket());

@@ -1,9 +1,6 @@
 package de.unibi.cebitec.aws.s3.transfer.streaming;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 
@@ -31,8 +28,7 @@ public class Streamer {
         this.targetFile = targetFile;
     }
 
-    public void download(AWSCredentials credentials, ClientConfiguration clientConfig, String bucketName) throws Exception {
-        AmazonS3 s3 = new AmazonS3Client(credentials, clientConfig);
+    public void download(AmazonS3 s3, String bucketName) throws Exception {
         GetObjectRequest getObjReq = new GetObjectRequest(bucketName, this.key);
         S3Object obj = s3.getObject(getObjReq);
         log.debug("Starting download of single file: {}", this.key);

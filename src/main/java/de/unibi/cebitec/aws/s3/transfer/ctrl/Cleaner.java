@@ -1,6 +1,6 @@
 package de.unibi.cebitec.aws.s3.transfer.ctrl;
 
-import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AbortMultipartUploadRequest;
 import com.amazonaws.services.s3.model.ListMultipartUploadsRequest;
 import com.amazonaws.services.s3.model.MultipartUpload;
@@ -15,11 +15,11 @@ import org.slf4j.LoggerFactory;
 
 public class Cleaner {
     private static final Logger log = LoggerFactory.getLogger(Cleaner.class);
-    private final AmazonS3Client s3;
+    private final AmazonS3 s3;
     private final String bucketName;
     private final Date thresholdDateInThePast;
 
-    public Cleaner(AmazonS3Client s3, String bucketName) {
+    public Cleaner(AmazonS3 s3, String bucketName) {
         this.s3 = s3;
         this.bucketName = bucketName;
         Calendar c = Calendar.getInstance();

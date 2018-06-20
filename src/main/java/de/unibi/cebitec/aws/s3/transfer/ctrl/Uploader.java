@@ -1,7 +1,6 @@
 package de.unibi.cebitec.aws.s3.transfer.ctrl;
 
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadResult;
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -43,7 +42,7 @@ public class Uploader {
     private final ObjectMetadata metadata;
     private final boolean reducedRedundancy;
 
-    public Uploader(AmazonS3Client s3, InputFileList<Path> inputFiles, String bucketName,
+    public Uploader(AmazonS3 s3, InputFileList<Path> inputFiles, String bucketName,
                     OutputFileList uploadTargetKeys, int numberOfThreads, long chunkSize,
                     ObjectMetadata metadata, boolean reducedRedundancy) {
         this.inputFiles = inputFiles;

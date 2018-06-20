@@ -3,10 +3,14 @@ package de.unibi.cebitec.aws.s3.transfer;
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.BasicSessionCredentials;
+import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.regions.Region;
+import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.*;
 import de.unibi.cebitec.aws.s3.transfer.ctrl.Cleaner;
 import de.unibi.cebitec.aws.s3.transfer.ctrl.Downloader;
@@ -97,7 +101,7 @@ public class BiBiS3 {
         Map<String, Region> regions = S3RegionsProvider.getS3Regions();
         // help text for region selection
         StringBuilder s3RegionInfo = new StringBuilder();
-        s3RegionInfo.append("S3 region. Has to be one of: ");
+        s3RegionInfo.append("S3 region. For AWS has to be one of: ");
         for (String regionName : regions.keySet()) {
             s3RegionInfo.append(regionName);
             s3RegionInfo.append(", ");
@@ -123,6 +127,7 @@ public class BiBiS3 {
                 .addOption(Option.builder().longOpt("chunk-size").hasArg().desc("Multipart chunk size in Bytes.").build())
                 .addOption(Option.builder().longOpt("streaming-download").desc("Run single threaded download and send special progress info to STDOUT.").build())
                 .addOption(Option.builder().longOpt("region").hasArg().desc(s3RegionInfo.toString()).build())
+                .addOption(Option.builder().longOpt("endpoint").hasArg().desc("Endpoint for client authentication (default: standard AWS endpoint).").build())
                 .addOption(Option.builder().longOpt("create-bucket").desc("Create bucket if nonexistent.").build())
                 .addOption(Option.builder().longOpt("grid-download").desc("Download only a subset of all chunks. This is useful for downloading e. g. to a shared filesystem via different machines simultaneously.").build())
                 .addOption(Option.builder().longOpt("grid-download-feature-split").desc("Download separate parts of a single file to different nodes into different files all with the same name. (--grid-download required)").build())
@@ -222,7 +227,6 @@ public class BiBiS3 {
 
             // Streaming download has its own handler.
             if (cl.hasOption("streaming-download")) {
-
                 if (cl.hasOption("d")) {
                     // we don't want the logger to mess up our progress output unless he has serious concerns
                     root.setLevel(ch.qos.logback.classic.Level.ERROR);
@@ -272,21 +276,29 @@ public class BiBiS3 {
                         log.info("== Copying from '{}' to '{}' in {} threads. Chunk size: {} Bytes", src, dest, numOfThreads, chunkSize);
                     }
 
-                    AmazonS3Client s3 = new AmazonS3Client(credentials, clientConfig);
-                    Region region = null;
+                    String region = null;
                     // Override region with CLI parameter if present.
                     if (cl.hasOption("region")) {
-                        String regionName = cl.getOptionValue("region");
-                        region = regions.get(regionName);
-                        if (region == null) {
-                            throw new IllegalArgumentException("There is no region named '" + regionName + "'");
-                        }
-                        s3.setRegion(region);
+                        region = cl.getOptionValue("region");
                     }
                     if (region == null) {
-                        region = regions.get(DEFAULT_REGION);
+                        region = DEFAULT_REGION;
                     }
-                    log.info("== Access key: {}   Bucket region: {}", credentials == null ? "none" : credentials.getAWSAccessKeyId(), region == null ? "default" : region);
+                    log.info("== Access key: {}   Bucket region: {}", credentials == null ? "none" : credentials.getAWSAccessKeyId(), region);
+
+                    String endpoint = null;
+                    // Override endpoint with CLI parameter if present.
+                    if (cl.hasOption("endpoint")) {
+                        endpoint = cl.getOptionValue("endpoint");
+                    }
+
+                    AmazonS3ClientBuilder builder = AmazonS3Client.builder();
+                    builder = endpoint == null ?
+                            builder.withRegion(region) :
+                            builder.withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(endpoint, region));
+                    final AmazonS3 s3 = builder.withClientConfiguration(clientConfig)
+                            .withCredentials(new AWSStaticCredentialsProvider(credentials))
+                            .build();
 
                     if (cl.hasOption("u")) {
                         // Upload task.
@@ -299,7 +311,7 @@ public class BiBiS3 {
                         // Create bucket if necessary and requested.
                         if (cl.hasOption("create-bucket") && !bucketExists && !credentials.getAWSSecretKey().isEmpty()) {
                             log.warn("Bucket '{}' does not exist yet and will be created.", s3uri.getBucket());
-                            CreateBucketRequest request = new CreateBucketRequest(s3uri.getBucket(), region.toString());
+                            CreateBucketRequest request = new CreateBucketRequest(s3uri.getBucket(), region);
                             s3.createBucket(request);
                         } else if (!bucketExists) {
                             log.error("Bucket '{}' does not exist! For automatic bucket creation use --create-bucket in combination with --region.", s3uri.getBucket());
@@ -378,7 +390,6 @@ public class BiBiS3 {
                         OutputFileList<String, Path> fileDownloadDestinations = new OutputFileList<>();
 
                         if (cl.hasOption("r")) {
-
                             // get list of files to download for given prefix
                             ListObjectsRequest listReq = new ListObjectsRequest();
                             listReq.setBucketName(s3uri.getBucket());
@@ -536,8 +547,8 @@ public class BiBiS3 {
                     if (credentials != null) {
                         ak = credentials.getAWSAccessKeyId();
                     }
-                    log.error("Access denied. The provided credentials have insufficient "
-                            + "rights to access this bucket. Access Key: '{}'", ak);
+                    log.error("Access denied. The provided credentials have insufficient rights to access this " +
+                            "bucket. Access Key: '{}'", ak);
                     break;
                 default:
                     log.error("S3 Error: {}", e);
@@ -561,7 +572,9 @@ public class BiBiS3 {
             jarFilename = "<jarfile>";
         }
         String header = "";
-        String footer = "S3 URLs have to be in the form of: 's3://<bucket>/<key>', e. g. 's3://mybucket/mydatafolder/data.txt'. When using recursive transfer (-r) the trailing slash of the directory is mandatory, e. g. 's3://mybucket/mydatafolder/'.";
+        String footer = "S3 URLs have to be in the form of: 's3://<bucket>/<key>', e.g. " +
+                "'s3://mybucket/mydatafolder/data.txt'. When using recursive transfer (-r) " +
+                "the trailing slash of the directory is mandatory, e.g. 's3://mybucket/mydatafolder/'.";
         help.printHelp("java -jar " + jarFilename + " -u|d|g|c SRC DEST", header, opts, footer);
     }
 }

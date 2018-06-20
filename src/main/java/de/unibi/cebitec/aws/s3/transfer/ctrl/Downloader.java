@@ -1,7 +1,6 @@
 package de.unibi.cebitec.aws.s3.transfer.ctrl;
 
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
 import de.unibi.cebitec.aws.s3.transfer.model.GridDownloadOrganizer;
 import de.unibi.cebitec.aws.s3.transfer.model.InputFileList;
 import de.unibi.cebitec.aws.s3.transfer.model.Measurements;
@@ -43,13 +42,16 @@ public class Downloader {
     private boolean gridDownload;
     private GridDownloadOrganizer gridDownloadOrganizer;
 
-    public Downloader(AmazonS3Client s3, String bucketName, InputFileList<String> inputFiles, OutputFileList<String, Path> fileDownloadDestinations, int numberOfThreads, long chunkSize, GridDownloadOrganizer gridDownloadOrganizer) {
+    public Downloader(AmazonS3 s3, String bucketName, InputFileList<String> inputFiles,
+                      OutputFileList<String, Path> fileDownloadDestinations, int numberOfThreads, long chunkSize,
+                      GridDownloadOrganizer gridDownloadOrganizer) {
         this(s3, bucketName, inputFiles, fileDownloadDestinations, numberOfThreads, chunkSize);
         this.gridDownload = true;
         this.gridDownloadOrganizer = gridDownloadOrganizer;
     }
 
-    public Downloader(AmazonS3Client s3, String bucketName, InputFileList<String> inputFiles, OutputFileList<String, Path> fileDownloadDestinations, int numberOfThreads, long chunkSize) {
+    public Downloader(AmazonS3 s3, String bucketName, InputFileList<String> inputFiles,
+                      OutputFileList<String, Path> fileDownloadDestinations, int numberOfThreads, long chunkSize) {
         this.gridDownload = false;
         this.bucketName = bucketName;
         this.inputFiles = inputFiles;

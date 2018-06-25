@@ -28,16 +28,16 @@ public class SingleUploadFile extends UploadFile implements IUploadChunk {
     @Override
     public void upload(AmazonS3 s3, String bucketName) throws IOException {
         try {
-            PutObjectRequest req = new PutObjectRequest(bucketName, this.key, Files.newInputStream(this.file), this.metadata);
-            if (this.reducedRedundancy) {
-                req.setStorageClass(StorageClass.ReducedRedundancy);
+            PutObjectRequest request = new PutObjectRequest(bucketName, key, Files.newInputStream(file), metadata);
+            if (reducedRedundancy) {
+                request.setStorageClass(StorageClass.ReducedRedundancy);
             }
-            log.debug("Starting upload of single file: {}", this.key);
-            s3.putObject(req);
+            log.debug("Starting upload of single file: {}", key);
+            s3.putObject(request);
             Measurements.countChunkAsFinished();
-            log.debug("Upload done: Single file: {}", this.key);
+            log.debug("Upload done: Single file: {}", key);
         } catch (IOException | AmazonClientException e) {
-            log.debug("Failed to upload single file: {} - Reason: {}", this.key, e.toString());
+            log.debug("Failed to upload single file: {} - Reason: {}", key, e.toString());
             throw e;
         }
     }

@@ -7,11 +7,7 @@ import com.amazonaws.services.s3.model.PartETag;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.PriorityQueue;
-import java.util.Queue;
+import java.util.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,25 +20,15 @@ public class MultipartUploadFile extends UploadFile {
 
     public MultipartUploadFile(Path file, String key, final long initialPartSize) {
         super(file, key);
-        this.remainingParts = new PriorityQueue<>(11, (p1, p2) -> {
-            if (p1.getPartNumber() == p2.getPartNumber()) {
-                return 0;
-            }
-            return p1.getPartNumber() < p2.getPartNumber() ? -1 : 1;
-        });
-        this.registeredParts = new ArrayList<>();
+        remainingParts = new PriorityQueue<>(11, Comparator.comparingInt(UploadPart::getPartNumber));
+        registeredParts = new ArrayList<>();
 
         try {
             long fileSize = Files.size(this.file);
-            long partSize;
             long pos = 0;
             for (int i = 1; pos < fileSize; i++) {
-                partSize = Math.min(initialPartSize, (fileSize - pos));
-                UploadPart p = new UploadPart(this);
-                p.setPartNumber(i);
-                p.setPartSize(partSize);
-                p.setFileOffset(pos);
-                this.remainingParts.add(p);
+                long partSize = Math.min(initialPartSize, (fileSize - pos));
+                remainingParts.add(new UploadPart(this, i, partSize, pos));
                 pos += partSize;
             }
         } catch (IOException e) {
@@ -52,26 +38,25 @@ public class MultipartUploadFile extends UploadFile {
 
     public void complete(AmazonS3 s3, String bucketName) {
         List<PartETag> tags = new ArrayList<>();
-        for (UploadPart p : this.registeredParts) {
+        for (UploadPart p : registeredParts) {
             tags.add(p.getTag());
         }
-        CompleteMultipartUploadRequest compRequest = new CompleteMultipartUploadRequest(
-                bucketName, this.key, this.uploadId, tags);
+        CompleteMultipartUploadRequest compRequest = new CompleteMultipartUploadRequest(bucketName, key, uploadId, tags);
         s3.completeMultipartUpload(compRequest);
-        log.debug("Completed multipart upload of file: {}", this.key);
+        log.debug("Completed multipart upload of file: {}", key);
     }
 
     public boolean hasMoreParts() {
-        return !this.remainingParts.isEmpty();
+        return !remainingParts.isEmpty();
     }
 
     private void addPart(UploadPart part) {
-        this.remainingParts.offer(part);
+        remainingParts.offer(part);
     }
 
     public UploadPart next() {
-        UploadPart currentPart = this.remainingParts.remove();
-        this.registeredParts.add(currentPart);
+        UploadPart currentPart = remainingParts.remove();
+        registeredParts.add(currentPart);
         return currentPart;
     }
 

@@ -225,21 +225,24 @@ public class BiBiS3 {
                 dest = positionalArgs[1];
             }
 
-            String region = null;
-            // Override region with CLI parameter if present.
-            if (cl.hasOption("region")) {
-                region = cl.getOptionValue("region");
-            }
-            if (region == null) {
-                region = DEFAULT_REGION;
-            }
-            log.info("== Access key: {}   Bucket region: {}", credentials == null ? "none" : credentials.getAWSAccessKeyId(), region);
-
             String endpoint = null;
             // Override endpoint with CLI parameter if present.
             if (cl.hasOption("endpoint")) {
                 endpoint = cl.getOptionValue("endpoint");
             }
+
+            String region = null;
+            // Override region with CLI parameter if present.
+            if (cl.hasOption("region")) {
+                region = cl.getOptionValue("region");
+                if (endpoint == null && region != null && !regions.containsKey(region)) {
+                    throw new IllegalArgumentException("The region could not be found for AWS!");
+                }
+            }
+            if (region == null) {
+                region = DEFAULT_REGION;
+            }
+            log.info("== Access key: {}   Bucket region: {}", credentials == null ? "none" : credentials.getAWSAccessKeyId(), region);
 
             AmazonS3ClientBuilder builder = AmazonS3Client.builder();
             builder = endpoint == null ?

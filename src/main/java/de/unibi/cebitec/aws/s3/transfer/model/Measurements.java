@@ -2,17 +2,13 @@ package de.unibi.cebitec.aws.s3.transfer.model;
 
 import java.text.DecimalFormat;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-public class Measurements {
+public final class Measurements {
     private static long overallBytes;
     private static long overallChunks;
     private static long finishedChunks;
     private static long start;
     private static long end;
     private static boolean started = false;
-    private static final Logger log = LoggerFactory.getLogger(Measurements.class);
 
     private Measurements() {
     }
@@ -45,19 +41,19 @@ public class Measurements {
     private static String formatResult(long bytes, String suffix) {
         DecimalFormat f = new DecimalFormat("#0.00");
         if (bytes > 1e9) {
-            return new StringBuilder().append(f.format(bytes / 1e9)).append("GB").append(suffix).toString();
+            return f.format(bytes / 1e9) + "GB" + suffix;
         }
         if (bytes > 1e6) {
-            return new StringBuilder().append(f.format(bytes / 1e6)).append("MB").append(suffix).toString();
+            return f.format(bytes / 1e6) + "MB" + suffix;
         }
         if (bytes > 1e3) {
-            return new StringBuilder().append(f.format(bytes / 1e3)).append("KB").append(suffix).toString();
+            return f.format(bytes / 1e3) + "KB" + suffix;
         }
-        return new StringBuilder().append(bytes).append("B").append(suffix).toString();
+        return String.valueOf(bytes) + "B" + suffix;
     }
 
     public static String getChunksFinishedCount() {
-        return new StringBuilder().append(finishedChunks).append(" / ").append(overallChunks).toString();
+        return finishedChunks + " / " + overallChunks;
     }
 
     public static String getEndResult() {

@@ -43,7 +43,7 @@ public class Uploader {
     private final boolean reducedRedundancy;
 
     public Uploader(AmazonS3 s3, InputFileList<Path> inputFiles, String bucketName,
-                    OutputFileList uploadTargetKeys, int numberOfThreads, long chunkSize,
+                    OutputFileList<Path, String> uploadTargetKeys, int numberOfThreads, long chunkSize,
                     ObjectMetadata metadata, boolean reducedRedundancy) {
         this.inputFiles = inputFiles;
         this.outputFiles = uploadTargetKeys;
@@ -68,21 +68,21 @@ public class Uploader {
             }
         }
 
-        log.debug("file list size: {}", this.files.size());
+        log.debug("file list size: {}", files.size());
 
         //fill chunk list
-        for (UploadFile f : this.files) {
+        for (UploadFile f : files) {
             if (f instanceof SingleUploadFile) {
-                this.chunks.add((IUploadChunk) f);
+                chunks.add((IUploadChunk) f);
             } else if (f instanceof MultipartUploadFile) {
                 while (((MultipartUploadFile) f).hasMoreParts()) {
-                    this.chunks.add(((MultipartUploadFile) f).next());
+                    chunks.add(((MultipartUploadFile) f).next());
                 }
             }
         }
 
-        Measurements.setOverallChunks(this.chunks.size());
-        log.info("== Uploading {} of data split into {} chunks...", Measurements.getOverallBytesFormatted(), this.chunks.size());
+        Measurements.setOverallChunks(chunks.size());
+        log.info("== Uploading {} of data split into {} chunks...", Measurements.getOverallBytesFormatted(), chunks.size());
 
         Measurements.start();
 
@@ -96,10 +96,10 @@ public class Uploader {
         timer.schedule(measurementsUpdates, 3000, 15000);
 
         //upload all chunks/single files
-        ExecutorService threading = Executors.newFixedThreadPool(this.numberOfThreads);
+        ExecutorService threading = Executors.newFixedThreadPool(numberOfThreads);
         List<Future<?>> futures = new ArrayList<>();
-        for (IUploadChunk chunk : this.chunks) {
-            futures.add(threading.submit(new TransferUploadThread(this.s3, this.bucketName, chunk, 6)));
+        for (IUploadChunk chunk : chunks) {
+            futures.add(threading.submit(new TransferUploadThread(s3, bucketName, chunk, 6)));
         }
 
         //wait for threads to finish
@@ -113,9 +113,9 @@ public class Uploader {
         threading.shutdown();
 
         //complete multipart uploads
-        for (UploadFile f : this.files) {
+        for (UploadFile f : files) {
             if (f instanceof MultipartUploadFile) {
-                ((MultipartUploadFile) f).complete(this.s3, this.bucketName);
+                ((MultipartUploadFile) f).complete(s3, bucketName);
             }
         }
 
@@ -124,17 +124,19 @@ public class Uploader {
     }
 
     private void addMultipartFile(Path file, String key, ObjectMetadata metadata, boolean reducedRedundancy) {
-        MultipartUploadFile mFile = new MultipartUploadFile(file, key, this.chunkSize);
-        this.files.add(mFile);
-        InitiateMultipartUploadRequest mReq = new InitiateMultipartUploadRequest(this.bucketName, mFile.getKey(), metadata);
+        MultipartUploadFile mFile = new MultipartUploadFile(file, key, chunkSize);
+        files.add(mFile);
+        InitiateMultipartUploadRequest request = new InitiateMultipartUploadRequest(bucketName, mFile.getKey(), metadata);
         if (reducedRedundancy) {
-            mReq.setStorageClass(StorageClass.ReducedRedundancy);
+            request.setStorageClass(StorageClass.ReducedRedundancy);
         }
-        InitiateMultipartUploadResult mRes = this.s3.initiateMultipartUpload(mReq);
-        mFile.setUploadId(mRes.getUploadId());
+        InitiateMultipartUploadResult result = s3.initiateMultipartUpload(request);
+        mFile.setUploadId(result.getUploadId());
+        log.debug("Add multipart file {} with upload id {}", key, result.getUploadId());
     }
 
     private void addSingleFile(Path file, String key, ObjectMetadata metadata, boolean reducedRedundancy) {
-        this.files.add(new SingleUploadFile(file, key, metadata, reducedRedundancy));
+        files.add(new SingleUploadFile(file, key, metadata, reducedRedundancy));
+        log.debug("Add single file {}", key);
     }
 }

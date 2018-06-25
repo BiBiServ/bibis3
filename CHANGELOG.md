@@ -1,7 +1,12 @@
 # Changelog
 
 ## 1.7.0
-- TODO
+- Added `--endpoint` to use alternative endpoints like OpenStack with the Ceph S3-API
+- Parameter `--region` is not checked for valid AWS regions if a custom endpoint is provided
+- Change build system to maven
+- Dependency removed: AWS SDK for Java 1.10.16
+- Dependency added: AWS S3 SDK for Java LATEST
+- Dependency update: logback 1.0.13 -> 1.2.3
 
 ## 1.6.1
 - Dependency update: AWS SDK for Java 1.9.27 -> 1.10.16 (includes joda time 2.8.1)
